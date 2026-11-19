@@ -15,20 +15,9 @@
   <body>
     <div id="root"></div>
     <script>
-      if (!window.crossOriginIsolated && 'serviceWorker' in navigator && window.isSecureContext) {
-        navigator.serviceWorker.register('./coi-serviceworker.js').then((reg) => {
-          if (reg.active && !navigator.serviceWorker.controller) {
-            window.location.reload();
-          }
-          reg.addEventListener('updatefound', () => {
-            const nw = reg.installing;
-            if (!nw) return;
-            nw.addEventListener('statechange', () => {
-              if (nw.state === 'activated' && !navigator.serviceWorker.controller) {
-                window.location.reload();
-              }
-            });
-          });
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then((regs) => {
+          for (const r of regs) r.unregister();
         }).catch(() => {});
       }
     </script>

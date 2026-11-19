@@ -137,7 +137,7 @@ export function buildStickerArgs(
   overrideFps?: number,
   overrideCompression?: number
 ): string[] {
-  const args: string[] = ['-threads', '0']
+  const args: string[] = []
   const trimDuration = Math.max(0.1, settings.trimEnd - settings.trimStart)
 
   if (settings.trimStart > 0.02) {
@@ -190,17 +190,17 @@ export function planAutoCompressSteps(initialFps: number, initialQuality: number
   const startFps = Math.max(8, Math.min(30, Math.round(initialFps)))
   const startQ = Math.max(15, Math.min(95, Math.round(initialQuality)))
 
-  const steps: CompressStep[] = [{ fps: startFps, quality: startQ, compressionLevel: 3 }]
+  const steps: CompressStep[] = [{ fps: startFps, quality: startQ, compressionLevel: 1 }]
 
-  const qualityLadder = [60, 46, 34, 24, 15].filter((q) => q < startQ)
+  const qualityLadder = [58, 42, 28, 16].filter((q) => q < startQ)
   for (const q of qualityLadder) {
-    steps.push({ fps: startFps, quality: q, compressionLevel: 5 })
+    steps.push({ fps: startFps, quality: q, compressionLevel: 2 })
   }
 
   const fpsLadder = [12, 10, 8].filter((f) => f < startFps)
   for (const f of fpsLadder) {
-    steps.push({ fps: f, quality: 28, compressionLevel: 6 })
-    steps.push({ fps: f, quality: 16, compressionLevel: 6 })
+    steps.push({ fps: f, quality: 26, compressionLevel: 2 })
+    steps.push({ fps: f, quality: 15, compressionLevel: 3 })
   }
 
   return steps

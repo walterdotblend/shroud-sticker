@@ -10,14 +10,10 @@ import type { EncodePassLog, EncodeResult, MediaInfo, StickerSettings } from './
 import { WHATSAPP_MAX_BYTES } from './types'
 
 const CORE_VERSION = '0.12.6'
-const SINGLE_THREAD_SOURCES = [
+const CORE_SOURCES = [
   `${import.meta.env.BASE_URL}ffmpeg`,
   `https://cdn.jsdelivr.net/npm/@ffmpeg/core@${CORE_VERSION}/dist/esm`,
   `https://unpkg.com/@ffmpeg/core@${CORE_VERSION}/dist/esm`,
-]
-const MULTI_THREAD_SOURCES = [
-  `${import.meta.env.BASE_URL}ffmpeg-mt`,
-  `https://cdn.jsdelivr.net/npm/@ffmpeg/core-mt@${CORE_VERSION}/dist/esm`,
 ]
 
 export interface EngineCallbacks {
@@ -36,28 +32,8 @@ class StickerFfmpegEngine {
     this.loadPromise = (async () => {
       const ff = new FFmpeg()
       let lastError: unknown = null
-      const canMultiThread = typeof window !== 'undefined' && window.crossOriginIsolated === true
 
-      if (canMultiThread) {
-        for (const baseUrl of MULTI_THREAD_SOURCES) {
-          try {
-            const label = baseUrl.startsWith('http') ? 'CDN multi-thread' : 'local multi-thread'
-            onLog?.(`> Initializing FFmpeg.wasm (${label})...`)
-            const coreURL = await toBlobURL(`${baseUrl}/ffmpeg-core.js`, 'text/javascript')
-            const wasmURL = await toBlobURL(`${baseUrl}/ffmpeg-core.wasm`, 'application/wasm')
-            const workerURL = await toBlobURL(`${baseUrl}/ffmpeg-core.worker.js`, 'text/javascript')
-            await ff.load({ coreURL, wasmURL, workerURL })
-            this.ffmpeg = ff
-            onLog?.('> FFmpeg.wasm multi-thread core ready (maximum CPU speed).')
-            return ff
-          } catch (err) {
-            lastError = err
-            onLog?.(`! Multi-thread unavailable at ${baseUrl}, trying fallback...`)
-          }
-        }
-      }
-
-      for (const baseUrl of SINGLE_THREAD_SOURCES) {
+      for (const baseUrl of CORE_SOURCES) {
         try {
           const label = baseUrl.startsWith('http')
             ? baseUrl.includes('jsdelivr')
@@ -95,39 +71,29 @@ class StickerFfmpegEngine {
     const outputName = 'sticker.webp'
 
     const effectiveDuration = computeEffectiveDuration(settings.trimStart, settings.trimEnd, settings.speed)
-    const expectedFrames = Math.max(1, Math.round(effectiveDuration * settings.fps))
 
     let currentPass = 1
-    let totalPlannedPasses = 1
+    let currentPassExpectedFrames = Math.max(1, Math.round(effectiveDuration * settings.fps))
+
+    const reportPassRatio = (passRatio: number, detail: string) => {
+      const clamped = Math.max(0, Math.min(1, passRatio))
+      const barRatio = 0.08 + clamped * 0.88
+      callbacks.onProgress(barRatio, `[Pass ${currentPass}] ${detail} (${Math.round(clamped * 100)}%)`)
+    }
 
     const progressListener = ({ progress }: { progress: number }) => {
-      if (!Number.isFinite(progress) || progress < 0) return
-      const clamped = Math.min(1, progress)
-      const overall = (currentPass - 1 + clamped) / totalPlannedPasses
-      callbacks.onProgress(
-        Math.max(0.06, Math.min(0.98, overall)),
-        `[Pass ${currentPass}/${totalPlannedPasses}] Forging WebP... ${Math.round(clamped * 100)}%`
-      )
+      if (!Number.isFinite(progress) || progress <= 0) return
+      reportPassRatio(progress, 'Forging WebP...')
     }
 
     const logListener = ({ message }: { message: string }) => {
       const t = parseFfmpegTime(message)
       const frameMatch = /frame=\s*(\d+)/.exec(message)
       if (t !== null && effectiveDuration > 0) {
-        const passRatio = Math.min(1, t / effectiveDuration)
-        const overall = (currentPass - 1 + passRatio) / totalPlannedPasses
-        callbacks.onProgress(
-          Math.max(0.06, Math.min(0.98, overall)),
-          `[Pass ${currentPass}/${totalPlannedPasses}] Forging WebP... ${Math.round(passRatio * 100)}%`
-        )
+        reportPassRatio(t / effectiveDuration, 'Forging WebP...')
       } else if (frameMatch) {
         const frames = Number(frameMatch[1])
-        const passRatio = Math.min(0.96, frames / expectedFrames)
-        const overall = (currentPass - 1 + passRatio) / totalPlannedPasses
-        callbacks.onProgress(
-          Math.max(0.06, Math.min(0.98, overall)),
-          `[Pass ${currentPass}/${totalPlannedPasses}] Frame ${frames}/${expectedFrames}...`
-        )
+        reportPassRatio(frames / currentPassExpectedFrames, `Frame ${frames}/${currentPassExpectedFrames}`)
       }
       if (message.includes('frame=') || message.includes('Output #0') || message.includes('Error')) {
         callbacks.onLog(message)
@@ -143,9 +109,8 @@ class StickerFfmpegEngine {
 
       const steps = settings.autoCompressWhatsApp
         ? planAutoCompressSteps(settings.fps, settings.quality)
-        : [{ fps: settings.fps, quality: settings.quality, compressionLevel: settings.compressionLevel }]
+        : [{ fps: settings.fps, quality: settings.quality, compressionLevel: 2 }]
 
-      totalPlannedPasses = steps.length
       const passLogs: EncodePassLog[] = []
       let bestBytes: Uint8Array | null = null
       let bestStep = steps[0]
@@ -153,11 +118,12 @@ class StickerFfmpegEngine {
       for (let i = 0; i < steps.length; i++) {
         currentPass = i + 1
         const step = steps[i]
+        currentPassExpectedFrames = Math.max(1, Math.round(effectiveDuration * step.fps))
         callbacks.onLog(
           `> Pass ${currentPass}: fps=${step.fps}, q=${step.quality}, comp=${step.compressionLevel}`
         )
         callbacks.onProgress(
-          (i / steps.length) * 0.92 + 0.06,
+          0.08,
           `Forging sticker [Pass ${currentPass}: ${step.fps}fps · q${step.quality}]...`
         )
 
