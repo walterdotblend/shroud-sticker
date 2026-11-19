@@ -84,6 +84,8 @@ export interface Translations {
   importAndroid: string
   importIos: string
   importDesktop: string
+  cursedLabel: string
+  dynamicBudgetHint: string
 }
 
 const en: Translations = {
@@ -160,6 +162,8 @@ const en: Translations = {
   importAndroid: 'Android: Open with "Sticker Maker" or "Personal Stickers for WhatsApp" and add the .webp pack.',
   importIos: 'iPhone (iOS): Share the .webp file to "Sticker Maker Studio" or "Top Stickers" → Add to WhatsApp.',
   importDesktop: 'WhatsApp Web / PC: Drag the .webp directly into a chat or use Sticker Maker on mobile to save as a sticker.',
+  cursedLabel: 'Cursed / Ugly',
+  dynamicBudgetHint: 'Max FPS capped to source; lower FPS to unlock higher quality.',
 }
 
 const es: Translations = {
@@ -236,6 +240,8 @@ const es: Translations = {
   importAndroid: 'Android: Ábrelo con "Sticker Maker" o "Personal Stickers for WhatsApp" y añade el paquete .webp.',
   importIos: 'iPhone (iOS): Comparte el .webp con "Sticker Maker Studio" → Añadir a WhatsApp.',
   importDesktop: 'WhatsApp Web / PC: En algunos clientes puedes enviar el .webp o importarlo desde tu móvil con Sticker Maker para guardarlo en favoritos.',
+  cursedLabel: 'Cursed / Feo',
+  dynamicBudgetHint: 'FPS máx según origen; baja los FPS para desbloquear mayor calidad.',
 }
 
 const pt: Translations = {

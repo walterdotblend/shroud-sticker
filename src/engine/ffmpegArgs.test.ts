@@ -26,6 +26,7 @@ const baseSettings: StickerSettings = {
   targetSize: 512,
   fps: 15,
   quality: 75,
+  cursedLevel: 0,
   compressionLevel: 4,
   autoCompressWhatsApp: true,
   maxBytes: WHATSAPP_SAFE_TARGET_BYTES,

@@ -257,6 +257,7 @@ export function CropStage({
               <span className="canvas-badge-512">
                 512×512 · {Math.round(canvasScale * 100)}% · {rotationDeg}°
               </span>
+              <div className="canvas-bounds-mask" aria-hidden="true" />
             </div>
 
             <div className="stage-transport">

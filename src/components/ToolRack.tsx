@@ -10,9 +10,11 @@ import {
   RotateCcw,
   Upload,
 } from 'lucide-react'
-import { computeEffectiveDuration } from '../engine/ffmpegArgs'
 import {
-  WHATSAPP_MAX_BYTES,
+  computeEffectiveDuration,
+  computeMaxAllowedQuality,
+} from '../engine/ffmpegArgs'
+import {
   WHATSAPP_MAX_DURATION_SEC,
   type CanvasBgMode,
   type EncodeResult,
@@ -20,7 +22,7 @@ import {
   type StickerSettings,
 } from '../engine/types'
 import type { Translations } from '../i18n/translations'
-import { CircularDial } from './CircularDial'
+import { VialControl } from './VialControl'
 
 export type WizardStep = 1 | 2 | 3
 
@@ -66,7 +68,10 @@ export function ToolRack({
   const maxDur = media ? Math.max(0.5, media.duration) : 10
   const effectiveDuration = computeEffectiveDuration(settings.trimStart, settings.trimEnd, settings.speed)
   const durationTooLong = effectiveDuration > WHATSAPP_MAX_DURATION_SEC
-  const maxKb = Math.min(500, Math.round(settings.maxBytes / 1024))
+  const maxSourceFps = Math.max(8, Math.min(30, media?.sourceFps ?? 30))
+  const activeFps = Math.min(settings.fps, maxSourceFps)
+  const maxAllowedQuality = computeMaxAllowedQuality(activeFps, effectiveDuration)
+  const activeQuality = Math.min(settings.quality, maxAllowedQuality)
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
@@ -268,7 +273,7 @@ export function ToolRack({
           </div>
 
           <div className="dials-row">
-            <CircularDial
+            <VialControl
               label={t.scaleLabel}
               value={Math.round(settings.canvasScale * 100)}
               min={15}
@@ -278,7 +283,7 @@ export function ToolRack({
               onChange={(pct) => onSettingsChange({ canvasScale: Number((pct / 100).toFixed(2)) })}
               onReset={() => onSettingsChange({ canvasScale: 1 })}
             />
-            <CircularDial
+            <VialControl
               label={t.rotateLabel}
               value={settings.rotationDeg}
               min={-180}
@@ -333,42 +338,47 @@ export function ToolRack({
           </label>
         </div>
 
-        <p className="muted-meta">{t.maxLimitHint}</p>
+        <p className="muted-meta">{t.dynamicBudgetHint}</p>
 
         <div className="dials-row">
-          <CircularDial
-            label="FPS"
-            value={settings.fps}
+          <VialControl
+            label={`FPS (≤${maxSourceFps})`}
+            value={activeFps}
             min={8}
-            max={30}
+            max={maxSourceFps}
             step={1}
-            onChange={(fps) => onSettingsChange({ fps: Math.max(8, Math.min(30, fps)) })}
-            onReset={() => onSettingsChange({ fps: 15 })}
-          />
-          <CircularDial
-            label={t.qualityLabel}
-            value={settings.quality}
-            min={15}
-            max={95}
-            step={5}
-            unit="%"
-            onChange={(q) => onSettingsChange({ quality: Math.max(15, Math.min(95, q)) })}
-            onReset={() => onSettingsChange({ quality: 75 })}
-          />
-          <CircularDial
-            label="Max KB"
-            value={maxKb}
-            min={150}
-            max={500}
-            step={10}
-            unit=" KB"
-            onChange={(kb) => {
-              const clamped = Math.max(150, Math.min(500, kb))
+            onChange={(fps) => {
+              const clampedFps = Math.max(8, Math.min(maxSourceFps, fps))
+              const nextMaxQ = computeMaxAllowedQuality(clampedFps, effectiveDuration)
               onSettingsChange({
-                maxBytes: Math.min(WHATSAPP_MAX_BYTES, clamped * 1024),
+                fps: clampedFps,
+                quality: Math.min(settings.quality, nextMaxQ),
               })
             }}
-            onReset={() => onSettingsChange({ maxBytes: 485 * 1024 })}
+            onReset={() => onSettingsChange({ fps: Math.min(15, maxSourceFps) })}
+          />
+          <VialControl
+            label={`${t.qualityLabel.replace(':', '')} (≤${maxAllowedQuality}%)`}
+            value={activeQuality}
+            min={15}
+            max={maxAllowedQuality}
+            step={5}
+            unit="%"
+            onChange={(q) =>
+              onSettingsChange({ quality: Math.max(15, Math.min(maxAllowedQuality, q)) })
+            }
+            onReset={() => onSettingsChange({ quality: Math.min(75, maxAllowedQuality) })}
+          />
+          <VialControl
+            label={t.cursedLabel}
+            value={settings.cursedLevel}
+            min={0}
+            max={100}
+            step={5}
+            unit="%"
+            accent="cursed"
+            onChange={(c) => onSettingsChange({ cursedLevel: Math.max(0, Math.min(100, c)) })}
+            onReset={() => onSettingsChange({ cursedLevel: 0 })}
           />
         </div>
 

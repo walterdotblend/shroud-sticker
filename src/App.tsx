@@ -36,6 +36,7 @@ const INITIAL_SETTINGS: StickerSettings = {
   targetSize: WHATSAPP_STICKER_SIZE,
   fps: 15,
   quality: 75,
+  cursedLevel: 0,
   compressionLevel: 4,
   autoCompressWhatsApp: true,
   maxBytes: WHATSAPP_SAFE_TARGET_BYTES,
@@ -111,6 +112,8 @@ export function App() {
         canvasX: 0,
         canvasY: 0,
         rotationDeg: 0,
+        fps: Math.min(15, info.sourceFps),
+        cursedLevel: 0,
       }))
       setStep(2)
       appendLog(

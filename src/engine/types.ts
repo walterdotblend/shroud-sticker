@@ -26,6 +26,7 @@ export interface StickerSettings {
   targetSize: number
   fps: number
   quality: number
+  cursedLevel: number
   compressionLevel: number
   autoCompressWhatsApp: boolean
   maxBytes: number
@@ -36,6 +37,7 @@ export interface MediaInfo {
   width: number
   height: number
   duration: number
+  sourceFps: number
   sizeBytes: number
   isGif: boolean
   objectUrl: string

@@ -29,6 +29,13 @@ export function computeEffectiveDuration(trimStart: number, trimEnd: number, spe
   return raw / safeSpeed
 }
 
+export function computeMaxAllowedQuality(fps: number, durationSec: number): number {
+  // Higher FPS * duration consumes more of the 500 KB WhatsApp budget, so cap max quality dynamically
+  const totalFrames = Math.max(8, fps * Math.max(0.5, durationSec))
+  const penalty = Math.max(0, totalFrames - 45) * 0.42
+  return Math.max(20, Math.min(95, Math.round(95 - penalty)))
+}
+
 export function computeBaseFitSize(sourceWidth: number, sourceHeight: number, canvasSize = 512): { width: number; height: number } {
   const sw = Math.max(1, sourceWidth)
   const sh = Math.max(1, sourceHeight)
@@ -79,7 +86,26 @@ export function buildStickerFilterComplex(
   let drawH = Math.max(4, Math.round(base.height * scale))
   if (drawW % 2 !== 0) drawW += 1
   if (drawH % 2 !== 0) drawH += 1
-  fgFilters.push(`scale=${drawW}:${drawH}:flags=lanczos`)
+
+  const cursed = Math.max(0, Math.min(100, settings.cursedLevel || 0))
+  if (cursed >= 35) {
+    // Crunchy pixel-fry downscale + nearest-neighbor upscale for comedic ugly effect
+    const factor = Math.max(0.14, 1 - (cursed / 100) * 0.82)
+    let lowW = Math.max(24, Math.round(drawW * factor))
+    let lowH = Math.max(24, Math.round(drawH * factor))
+    if (lowW % 2 !== 0) lowW += 1
+    if (lowH % 2 !== 0) lowH += 1
+    fgFilters.push(`scale=${lowW}:${lowH}:flags=neighbor`)
+    fgFilters.push(`scale=${drawW}:${drawH}:flags=neighbor`)
+  } else {
+    fgFilters.push(`scale=${drawW}:${drawH}:flags=lanczos`)
+  }
+
+  if (cursed >= 15) {
+    const contrast = (1 + (cursed / 100) * 0.75).toFixed(2)
+    const sat = (1 + (cursed / 100) * 1.1).toFixed(2)
+    fgFilters.push(`eq=contrast=${contrast}:saturation=${sat}`)
+  }
 
   if (Math.abs(settings.rotationDeg) > 0.1) {
     const rad = ((settings.rotationDeg * Math.PI) / 180).toFixed(5)
@@ -115,7 +141,10 @@ export function buildStickerArgs(
   args.push('-t', trimDuration.toFixed(3))
 
   const fc = buildStickerFilterComplex(settings, sourceWidth, sourceHeight, overrideFps)
-  const quality = Math.max(5, Math.min(95, Math.round(overrideQuality ?? settings.quality)))
+  const cursed = Math.max(0, Math.min(100, settings.cursedLevel || 0))
+  const rawQuality = overrideQuality ?? settings.quality
+  const cursedQuality = cursed > 0 ? Math.max(3, Math.round(rawQuality * (1 - (cursed / 100) * 0.88))) : rawQuality
+  const quality = Math.max(3, Math.min(95, Math.round(cursedQuality)))
   const compression = Math.max(0, Math.min(6, Math.round(overrideCompression ?? settings.compressionLevel)))
 
   args.push(
