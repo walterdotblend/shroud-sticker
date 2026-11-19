@@ -9,7 +9,6 @@ import {
   WHATSAPP_MAX_DURATION_SEC,
   WHATSAPP_SAFE_TARGET_BYTES,
   WHATSAPP_STICKER_SIZE,
-  type CropAspect,
   type EncodeResult,
   type MediaInfo,
   type StickerSettings,
@@ -29,6 +28,11 @@ const INITIAL_SETTINGS: StickerSettings = {
   reverse: false,
   crop: null,
   fitMode: 'contain-transparent',
+  canvasBg: 'transparent',
+  canvasScale: 1,
+  canvasX: 0,
+  canvasY: 0,
+  rotationDeg: 0,
   targetSize: WHATSAPP_STICKER_SIZE,
   fps: 15,
   quality: 75,
@@ -44,7 +48,6 @@ export function App() {
   const [step, setStep] = useState<WizardStep>(1)
   const [media, setMedia] = useState<MediaInfo | null>(null)
   const [settings, setSettings] = useState<StickerSettings>(INITIAL_SETTINGS)
-  const [aspect, setAspect] = useState<CropAspect>('free')
   const [viewMode, setViewMode] = useState<'source' | 'result'>('source')
 
   const [urlLoading, setUrlLoading] = useState(false)
@@ -97,7 +100,6 @@ export function App() {
       setMedia(info)
       setResult(null)
       setViewMode('source')
-      setAspect('free')
       setSettings((prev) => ({
         ...prev,
         trimStart: 0,
@@ -105,6 +107,10 @@ export function App() {
         speed: 1,
         reverse: false,
         crop: null,
+        canvasScale: 1,
+        canvasX: 0,
+        canvasY: 0,
+        rotationDeg: 0,
       }))
       setStep(2)
       appendLog(
@@ -198,9 +204,11 @@ export function App() {
 
         <div className="topbar-right">
           <span className="spec-pill">{t.specBadge}</span>
-          <label className="lang-pill" title="Language">
-            <Globe size={12} className="icon-crimson" />
+          <label className="lang-pill" title="Language / Idioma">
+            <Globe size={13} className="icon-crimson" />
+            <span className="lang-prefix">Idioma:</span>
             <select
+              aria-label="Language"
               value={lang}
               onChange={(e) => handleLangChange(e.target.value as LangCode)}
               className="lang-select"
@@ -250,15 +258,21 @@ export function App() {
           <CropStage
             t={t}
             media={media}
-            crop={settings.crop}
-            aspect={aspect}
+            canvasBg={settings.canvasBg}
+            canvasScale={settings.canvasScale}
+            canvasX={settings.canvasX}
+            canvasY={settings.canvasY}
+            rotationDeg={settings.rotationDeg}
             trimStart={settings.trimStart}
             trimEnd={settings.trimEnd}
             speed={settings.speed}
             result={result}
             viewMode={viewMode}
             onViewModeChange={setViewMode}
-            onCropChange={(crop) => handleSettingsChange({ crop })}
+            onTransformChange={(patch) => handleSettingsChange(patch)}
+            onResetTransform={() =>
+              handleSettingsChange({ canvasScale: 1, canvasX: 0, canvasY: 0, rotationDeg: 0 })
+            }
           />
         )}
 
@@ -267,7 +281,6 @@ export function App() {
           step={step}
           media={media}
           settings={settings}
-          aspect={aspect}
           urlLoading={urlLoading}
           urlError={urlError}
           encoding={encoding}
@@ -276,7 +289,6 @@ export function App() {
           onFileSelected={loadFile}
           onUrlSubmit={handleUrlSubmit}
           onSettingsChange={handleSettingsChange}
-          onAspectChange={setAspect}
           onForge={handleForge}
           onDownload={handleDownload}
         />

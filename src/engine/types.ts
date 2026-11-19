@@ -9,6 +9,8 @@ export interface CropRect {
   height: number
 }
 
+export type CanvasBgMode = 'transparent' | 'obsidian'
+
 export interface StickerSettings {
   trimStart: number
   trimEnd: number
@@ -16,6 +18,11 @@ export interface StickerSettings {
   reverse: boolean
   crop: CropRect | null
   fitMode: FitMode
+  canvasBg: CanvasBgMode
+  canvasScale: number
+  canvasX: number
+  canvasY: number
+  rotationDeg: number
   targetSize: number
   fps: number
   quality: number

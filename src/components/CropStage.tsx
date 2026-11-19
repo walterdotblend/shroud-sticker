@@ -1,69 +1,72 @@
 import { useEffect, useRef, useState } from 'react'
 import { Eye, Pause, Play, RotateCcw, Scissors } from 'lucide-react'
-import type { CropAspect, CropRect, EncodeResult, MediaInfo } from '../engine/types'
+import { computeBaseFitSize } from '../engine/ffmpegArgs'
+import type { CanvasBgMode, EncodeResult, MediaInfo } from '../engine/types'
 import type { Translations } from '../i18n/translations'
 
 interface CropStageProps {
   t: Translations
   media: MediaInfo | null
-  crop: CropRect | null
-  aspect: CropAspect
+  canvasBg: CanvasBgMode
+  canvasScale: number
+  canvasX: number
+  canvasY: number
+  rotationDeg: number
   trimStart: number
   trimEnd: number
   speed: number
   result: EncodeResult | null
   viewMode: 'source' | 'result'
   onViewModeChange: (mode: 'source' | 'result') => void
-  onCropChange: (crop: CropRect | null) => void
+  onTransformChange: (patch: {
+    canvasScale?: number
+    canvasX?: number
+    canvasY?: number
+    rotationDeg?: number
+  }) => void
+  onResetTransform: () => void
 }
 
-type DragMode = 'move' | 'nw' | 'ne' | 'sw' | 'se' | null
-
-function aspectToRatio(aspect: CropAspect): number | null {
-  switch (aspect) {
-    case '1:1':
-      return 1
-    case '16:9':
-      return 16 / 9
-    case '4:3':
-      return 4 / 3
-    case '9:16':
-      return 9 / 16
-    default:
-      return null
-  }
-}
+type DragAction = 'move' | 'scale' | 'rotate' | null
 
 export function CropStage({
   t,
   media,
-  crop,
-  aspect,
+  canvasBg,
+  canvasScale,
+  canvasX,
+  canvasY,
+  rotationDeg,
   trimStart,
   trimEnd,
   speed,
   result,
   viewMode,
   onViewModeChange,
-  onCropChange,
+  onTransformChange,
+  onResetTransform,
 }: CropStageProps) {
-  const stageRef = useRef<HTMLDivElement>(null)
+  const canvasBoxRef = useRef<HTMLDivElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const [playing, setPlaying] = useState(true)
   const [currentTime, setCurrentTime] = useState(0)
-  const dragState = useRef<{
-    mode: DragMode
+
+  const dragRef = useRef<{
+    action: DragAction
+    startClientX: number
+    startClientY: number
     startX: number
     startY: number
-    initialCrop: CropRect
-    boxRect: DOMRect
+    startScale: number
+    centerX: number
+    centerY: number
+    startDist: number
   } | null>(null)
 
-  // Keep video playback within [trimStart, trimEnd] and apply preview playbackRate
   useEffect(() => {
     const v = videoRef.current
     if (!v || !media || media.isGif) return
-    v.playbackRate = Math.max(0.25, Math.min(4, speed))
+    v.playbackRate = Math.max(0.1, Math.min(8, speed))
   }, [speed, media])
 
   useEffect(() => {
@@ -91,87 +94,64 @@ export function CropStage({
     }
   }
 
-  const activeCrop: CropRect = crop ?? {
-    x: 0,
-    y: 0,
-    width: media?.width ?? 512,
-    height: media?.height ?? 512,
-  }
+  const base = media ? computeBaseFitSize(media.width, media.height, 512) : { width: 512, height: 512 }
+  const drawW = base.width * canvasScale
+  const drawH = base.height * canvasScale
 
-  const startDrag = (e: React.PointerEvent, mode: DragMode) => {
-    if (!media || !stageRef.current) return
+  const startDrag = (e: React.PointerEvent, action: DragAction) => {
+    if (!canvasBoxRef.current || !action) return
     e.stopPropagation()
     e.preventDefault()
     ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
-    dragState.current = {
-      mode,
-      startX: e.clientX,
-      startY: e.clientY,
-      initialCrop: { ...activeCrop },
-      boxRect: stageRef.current.getBoundingClientRect(),
+
+    const box = canvasBoxRef.current.getBoundingClientRect()
+    const pxRatio = box.width / 512
+    const centerX = box.left + box.width / 2 + canvasX * pxRatio
+    const centerY = box.top + box.height / 2 + canvasY * pxRatio
+    const startDist = Math.max(10, Math.hypot(e.clientX - centerX, e.clientY - centerY))
+
+    dragRef.current = {
+      action,
+      startClientX: e.clientX,
+      startClientY: e.clientY,
+      startX: canvasX,
+      startY: canvasY,
+      startScale: canvasScale,
+      centerX,
+      centerY,
+      startDist,
     }
   }
 
   const onPointerMove = (e: React.PointerEvent) => {
-    const d = dragState.current
-    if (!d || !media || !d.mode) return
+    const d = dragRef.current
+    if (!d || !canvasBoxRef.current) return
+    const box = canvasBoxRef.current.getBoundingClientRect()
+    const pxToCanvas = 512 / Math.max(1, box.width)
 
-    const scaleX = media.width / d.boxRect.width
-    const scaleY = media.height / d.boxRect.height
-    const dx = (e.clientX - d.startX) * scaleX
-    const dy = (e.clientY - d.startY) * scaleY
-
-    const minSize = 32
-    const ratio = aspectToRatio(aspect)
-    let { x, y, width, height } = d.initialCrop
-
-    if (d.mode === 'move') {
-      x = Math.max(0, Math.min(media.width - width, x + dx))
-      y = Math.max(0, Math.min(media.height - height, y + dy))
-    } else {
-      if (d.mode.includes('e')) {
-        width = Math.max(minSize, Math.min(media.width - x, width + dx))
-      }
-      if (d.mode.includes('s')) {
-        height = Math.max(minSize, Math.min(media.height - y, height + dy))
-      }
-      if (d.mode.includes('w')) {
-        const nextX = Math.max(0, Math.min(x + width - minSize, x + dx))
-        width = width + (x - nextX)
-        x = nextX
-      }
-      if (d.mode.includes('n')) {
-        const nextY = Math.max(0, Math.min(y + height - minSize, y + dy))
-        height = height + (y - nextY)
-        y = nextY
-      }
-
-      if (ratio !== null) {
-        height = width / ratio
-        if (y + height > media.height) {
-          height = media.height - y
-          width = height * ratio
-        }
-        if (x + width > media.width) {
-          width = media.width - x
-          height = width / ratio
-        }
-      }
+    if (d.action === 'move') {
+      const dx = (e.clientX - d.startClientX) * pxToCanvas
+      const dy = (e.clientY - d.startClientY) * pxToCanvas
+      onTransformChange({
+        canvasX: Math.round(Math.max(-420, Math.min(420, d.startX + dx))),
+        canvasY: Math.round(Math.max(-420, Math.min(420, d.startY + dy))),
+      })
+    } else if (d.action === 'scale') {
+      const dist = Math.max(10, Math.hypot(e.clientX - d.centerX, e.clientY - d.centerY))
+      const nextScale = Math.max(0.15, Math.min(3.0, d.startScale * (dist / d.startDist)))
+      onTransformChange({ canvasScale: Number(nextScale.toFixed(2)) })
+    } else if (d.action === 'rotate') {
+      const rad = Math.atan2(e.clientY - d.centerY, e.clientX - d.centerX)
+      let deg = Math.round((rad * 180) / Math.PI + 90)
+      if (deg > 180) deg -= 360
+      if (deg < -180) deg += 360
+      onTransformChange({ rotationDeg: deg })
     }
-
-    onCropChange({
-      x: Math.round(x),
-      y: Math.round(y),
-      width: Math.max(minSize, Math.round(width)),
-      height: Math.max(minSize, Math.round(height)),
-    })
   }
 
   const endDrag = () => {
-    dragState.current = null
+    dragRef.current = null
   }
-
-  const pct = (val: number, total: number) => `${((val / Math.max(1, total)) * 100).toFixed(3)}%`
 
   return (
     <div className="panel stage-panel">
@@ -228,68 +208,74 @@ export function CropStage({
         ) : (
           <div className="media-stage-container">
             <div
-              ref={stageRef}
-              className="media-crop-wrapper"
+              ref={canvasBoxRef}
+              className={`sticker-canvas-512 ${canvasBg === 'obsidian' ? 'bg-obsidian' : 'bg-checker'}`}
               onPointerMove={onPointerMove}
               onPointerUp={endDrag}
               onPointerCancel={endDrag}
             >
-              {media.isGif ? (
-                <img src={media.objectUrl} alt={media.name} className="stage-media" draggable={false} />
-              ) : (
-                <video
-                  ref={videoRef}
-                  src={media.objectUrl}
-                  className="stage-media"
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                />
-              )}
-
-              {/* Interactive crop overlay */}
               <div
-                className="crop-box"
+                className="canvas-layer"
                 style={{
-                  left: pct(activeCrop.x, media.width),
-                  top: pct(activeCrop.y, media.height),
-                  width: pct(activeCrop.width, media.width),
-                  height: pct(activeCrop.height, media.height),
+                  width: `${(drawW / 512) * 100}%`,
+                  height: `${(drawH / 512) * 100}%`,
+                  left: `${50 + (canvasX / 512) * 100}%`,
+                  top: `${50 + (canvasY / 512) * 100}%`,
+                  transform: `translate(-50%, -50%) rotate(${rotationDeg}deg)`,
                 }}
                 onPointerDown={(e) => startDrag(e, 'move')}
               >
-                <div className="crop-grid" />
-                <span className="crop-dims-badge">
-                  {activeCrop.width}×{activeCrop.height}
-                </span>
-                <div className="crop-handle nw" onPointerDown={(e) => startDrag(e, 'nw')} />
-                <div className="crop-handle ne" onPointerDown={(e) => startDrag(e, 'ne')} />
-                <div className="crop-handle sw" onPointerDown={(e) => startDrag(e, 'sw')} />
-                <div className="crop-handle se" onPointerDown={(e) => startDrag(e, 'se')} />
+                {media.isGif ? (
+                  <img src={media.objectUrl} alt={media.name} className="canvas-layer-media" draggable={false} />
+                ) : (
+                  <video
+                    ref={videoRef}
+                    src={media.objectUrl}
+                    className="canvas-layer-media"
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                  />
+                )}
+
+                {/* Rotation stem & handle */}
+                <div className="rotate-stem" />
+                <div
+                  className="rotate-handle"
+                  onPointerDown={(e) => startDrag(e, 'rotate')}
+                  title="Arrastra para rotar"
+                />
+
+                {/* 4 corner scale handles */}
+                <div className="crop-handle nw" onPointerDown={(e) => startDrag(e, 'scale')} />
+                <div className="crop-handle ne" onPointerDown={(e) => startDrag(e, 'scale')} />
+                <div className="crop-handle sw" onPointerDown={(e) => startDrag(e, 'scale')} />
+                <div className="crop-handle se" onPointerDown={(e) => startDrag(e, 'scale')} />
               </div>
+
+              <span className="canvas-badge-512">
+                512×512 · {Math.round(canvasScale * 100)}% · {rotationDeg}°
+              </span>
             </div>
 
-            {!media.isGif && (
-              <div className="stage-transport">
-                <button type="button" className="btn-ghost-sm" onClick={togglePlay}>
-                  {playing ? <Pause size={13} /> : <Play size={13} />}
-                  {playing ? t.pause : t.play}
-                </button>
-                <span className="transport-time">
-                  {currentTime.toFixed(2)}s / {media.duration.toFixed(2)}s
-                </span>
-                <button
-                  type="button"
-                  className="btn-ghost-sm"
-                  onClick={() => onCropChange(null)}
-                  title={t.resetCrop}
-                >
-                  <RotateCcw size={12} />
-                  {t.resetCrop}
-                </button>
-              </div>
-            )}
+            <div className="stage-transport">
+              {!media.isGif && (
+                <>
+                  <button type="button" className="btn-ghost-sm" onClick={togglePlay}>
+                    {playing ? <Pause size={13} /> : <Play size={13} />}
+                    {playing ? t.pause : t.play}
+                  </button>
+                  <span className="transport-time">
+                    {currentTime.toFixed(2)}s / {media.duration.toFixed(2)}s
+                  </span>
+                </>
+              )}
+              <button type="button" className="btn-ghost-sm" onClick={onResetTransform}>
+                <RotateCcw size={12} />
+                {t.resetCrop}
+              </button>
+            </div>
           </div>
         )}
       </div>

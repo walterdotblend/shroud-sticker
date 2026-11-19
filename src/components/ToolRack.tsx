@@ -1,26 +1,26 @@
 import { useRef, useState } from 'react'
 import {
   Clock,
-  Crop,
   Download,
   Flame,
   Gauge,
+  HelpCircle,
   Link2,
-  Maximize2,
+  Move,
   RotateCcw,
   Upload,
 } from 'lucide-react'
 import { computeEffectiveDuration } from '../engine/ffmpegArgs'
 import {
+  WHATSAPP_MAX_BYTES,
   WHATSAPP_MAX_DURATION_SEC,
-  type CropAspect,
-  type CropRect,
+  type CanvasBgMode,
   type EncodeResult,
-  type FitMode,
   type MediaInfo,
   type StickerSettings,
 } from '../engine/types'
 import type { Translations } from '../i18n/translations'
+import { CircularDial } from './CircularDial'
 
 export type WizardStep = 1 | 2 | 3
 
@@ -29,7 +29,6 @@ interface ToolRackProps {
   step: WizardStep
   media: MediaInfo | null
   settings: StickerSettings
-  aspect: CropAspect
   urlLoading: boolean
   urlError: string | null
   encoding: boolean
@@ -38,37 +37,17 @@ interface ToolRackProps {
   onFileSelected: (file: File) => void
   onUrlSubmit: (url: string) => void
   onSettingsChange: (patch: Partial<StickerSettings>) => void
-  onAspectChange: (aspect: CropAspect) => void
   onForge: () => void
   onDownload: () => void
 }
 
 const SPEED_PRESETS = [0.5, 1, 1.5, 2, 3, 4]
 
-function computeCenteredAspectCrop(width: number, height: number, aspect: CropAspect): CropRect | null {
-  if (aspect === 'free') return null
-  const ratio =
-    aspect === '1:1' ? 1 : aspect === '16:9' ? 16 / 9 : aspect === '4:3' ? 4 / 3 : 9 / 16
-  let cw = width
-  let ch = Math.round(cw / ratio)
-  if (ch > height) {
-    ch = height
-    cw = Math.round(ch * ratio)
-  }
-  return {
-    x: Math.round((width - cw) / 2),
-    y: Math.round((height - ch) / 2),
-    width: cw,
-    height: ch,
-  }
-}
-
 export function ToolRack({
   t,
   step,
   media,
   settings,
-  aspect,
   urlLoading,
   urlError,
   encoding,
@@ -77,7 +56,6 @@ export function ToolRack({
   onFileSelected,
   onUrlSubmit,
   onSettingsChange,
-  onAspectChange,
   onForge,
   onDownload,
 }: ToolRackProps) {
@@ -88,34 +66,13 @@ export function ToolRack({
   const maxDur = media ? Math.max(0.5, media.duration) : 10
   const effectiveDuration = computeEffectiveDuration(settings.trimStart, settings.trimEnd, settings.speed)
   const durationTooLong = effectiveDuration > WHATSAPP_MAX_DURATION_SEC
-
-  const ASPECT_PRESETS: { id: CropAspect; label: string }[] = [
-    { id: '1:1', label: '1:1' },
-    { id: 'free', label: t.aspectFree },
-    { id: '16:9', label: '16:9' },
-    { id: '4:3', label: '4:3' },
-    { id: '9:16', label: '9:16' },
-  ]
-
-  const FIT_MODES: { id: FitMode; label: string; hint: string }[] = [
-    { id: 'contain-transparent', label: t.fitContainTrans, hint: t.fitContainTransHint },
-    { id: 'cover', label: t.fitCover, hint: t.fitCoverHint },
-    { id: 'contain-dark', label: t.fitContainDark, hint: t.fitContainDarkHint },
-    { id: 'stretch', label: t.fitStretch, hint: t.fitStretchHint },
-  ]
+  const maxKb = Math.min(500, Math.round(settings.maxBytes / 1024))
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
     setDragOver(false)
     const file = e.dataTransfer.files?.[0]
     if (file) onFileSelected(file)
-  }
-
-  const handleAspectPick = (next: CropAspect) => {
-    onAspectChange(next)
-    if (media) {
-      onSettingsChange({ crop: computeCenteredAspectCrop(media.width, media.height, next) })
-    }
   }
 
   if (step === 1) {
@@ -158,9 +115,7 @@ export function ToolRack({
               }}
             />
             <Upload size={28} className="icon-crimson" />
-            <span className="dropzone-main">
-              {media ? `${t.dropLoaded} ${media.name}` : t.dropMain}
-            </span>
+            <span className="dropzone-main">{media ? `${t.dropLoaded} ${media.name}` : t.dropMain}</span>
             <span className="dropzone-sub">{t.dropSub}</span>
           </div>
 
@@ -251,16 +206,33 @@ export function ToolRack({
             <div className="control-row">
               <div className="control-label-row">
                 <span className="control-label">
-                  <Gauge size={12} /> {t.speed} <strong>{settings.speed.toFixed(2)}×</strong>
+                  <Gauge size={12} /> {t.speed}
                 </span>
-                <label className="checkbox-inline">
+                <div className="speed-input-group">
                   <input
-                    type="checkbox"
-                    checked={settings.reverse}
-                    onChange={(e) => onSettingsChange({ reverse: e.target.checked })}
+                    type="number"
+                    min={0.1}
+                    max={8}
+                    step={0.05}
+                    value={settings.speed}
+                    onChange={(e) => {
+                      const val = Number(e.target.value)
+                      if (Number.isFinite(val)) {
+                        onSettingsChange({ speed: Math.max(0.1, Math.min(8, val)) })
+                      }
+                    }}
+                    className="terminal-input speed-number-box"
                   />
-                  <span>{t.reverse}</span>
-                </label>
+                  <span className="muted-meta">×</span>
+                  <label className="checkbox-inline">
+                    <input
+                      type="checkbox"
+                      checked={settings.reverse}
+                      onChange={(e) => onSettingsChange({ reverse: e.target.checked })}
+                    />
+                    <span>{t.reverse}</span>
+                  </label>
+                </div>
               </div>
               <div className="chip-row">
                 {SPEED_PRESETS.map((s) => (
@@ -274,15 +246,6 @@ export function ToolRack({
                   </button>
                 ))}
               </div>
-              <input
-                type="range"
-                min={0.25}
-                max={4}
-                step={0.05}
-                value={settings.speed}
-                onChange={(e) => onSettingsChange({ speed: Number(e.target.value) })}
-                className="crimson-slider"
-              />
             </div>
           </div>
         </section>
@@ -290,55 +253,53 @@ export function ToolRack({
         <section className="panel">
           <div className="panel-header">
             <div className="panel-title-group">
-              <Crop size={14} className="icon-crimson" />
-              <span className="panel-title">{t.cropResizeTitle}</span>
+              <Move size={14} className="icon-crimson" />
+              <span className="panel-title">{t.canvasTransformTitle}</span>
             </div>
             <button
               type="button"
               className="btn-link-sm"
-              disabled={!media}
-              onClick={() => {
-                onAspectChange('free')
-                onSettingsChange({ crop: null })
-              }}
+              onClick={() =>
+                onSettingsChange({ canvasScale: 1, canvasX: 0, canvasY: 0, rotationDeg: 0 })
+              }
             >
-              <RotateCcw size={11} /> {t.noCrop}
+              <RotateCcw size={11} /> {t.resetCrop}
             </button>
           </div>
 
-          <div className="control-grid">
-            <div className="control-row">
-              <span className="control-label">{t.cropHint}</span>
-              <div className="chip-row">
-                {ASPECT_PRESETS.map((p) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    className={`mini-chip ${aspect === p.id ? 'active' : ''}`}
-                    onClick={() => handleAspectPick(p.id)}
-                  >
-                    {p.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+          <div className="dials-row">
+            <CircularDial
+              label={t.scaleLabel}
+              value={Math.round(settings.canvasScale * 100)}
+              min={15}
+              max={300}
+              step={5}
+              unit="%"
+              onChange={(pct) => onSettingsChange({ canvasScale: Number((pct / 100).toFixed(2)) })}
+              onReset={() => onSettingsChange({ canvasScale: 1 })}
+            />
+            <CircularDial
+              label={t.rotateLabel}
+              value={settings.rotationDeg}
+              min={-180}
+              max={180}
+              step={1}
+              unit="°"
+              onChange={(deg) => onSettingsChange({ rotationDeg: deg })}
+              onReset={() => onSettingsChange({ rotationDeg: 0 })}
+            />
+          </div>
 
-            <div className="control-row">
-              <span className="control-label">
-                <Maximize2 size={12} /> {t.fitLabel}
-              </span>
-              <select
-                value={settings.fitMode}
-                onChange={(e) => onSettingsChange({ fitMode: e.target.value as FitMode })}
-                className="terminal-select"
-              >
-                {FIT_MODES.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.label} — {m.hint}
-                  </option>
-                ))}
-              </select>
-            </div>
+          <div className="control-row">
+            <span className="control-label">{t.canvasBgLabel}</span>
+            <select
+              value={settings.canvasBg}
+              onChange={(e) => onSettingsChange({ canvasBg: e.target.value as CanvasBgMode })}
+              className="terminal-select"
+            >
+              <option value="transparent">{t.bgTransparent}</option>
+              <option value="obsidian">{t.bgObsidian}</option>
+            </select>
           </div>
 
           <div className="wizard-nav">
@@ -372,36 +333,43 @@ export function ToolRack({
           </label>
         </div>
 
-        <div className="control-grid two-col">
-          <div className="control-row">
-            <label className="control-label">
-              {t.fpsLabel} <strong>{settings.fps}</strong>
-            </label>
-            <input
-              type="range"
-              min={8}
-              max={30}
-              step={1}
-              value={settings.fps}
-              onChange={(e) => onSettingsChange({ fps: Number(e.target.value) })}
-              className="crimson-slider"
-            />
-          </div>
+        <p className="muted-meta">{t.maxLimitHint}</p>
 
-          <div className="control-row">
-            <label className="control-label">
-              {t.qualityLabel} <strong>{settings.quality}%</strong>
-            </label>
-            <input
-              type="range"
-              min={15}
-              max={95}
-              step={5}
-              value={settings.quality}
-              onChange={(e) => onSettingsChange({ quality: Number(e.target.value) })}
-              className="crimson-slider"
-            />
-          </div>
+        <div className="dials-row">
+          <CircularDial
+            label="FPS"
+            value={settings.fps}
+            min={8}
+            max={30}
+            step={1}
+            onChange={(fps) => onSettingsChange({ fps: Math.max(8, Math.min(30, fps)) })}
+            onReset={() => onSettingsChange({ fps: 15 })}
+          />
+          <CircularDial
+            label={t.qualityLabel}
+            value={settings.quality}
+            min={15}
+            max={95}
+            step={5}
+            unit="%"
+            onChange={(q) => onSettingsChange({ quality: Math.max(15, Math.min(95, q)) })}
+            onReset={() => onSettingsChange({ quality: 75 })}
+          />
+          <CircularDial
+            label="Max KB"
+            value={maxKb}
+            min={150}
+            max={500}
+            step={10}
+            unit=" KB"
+            onChange={(kb) => {
+              const clamped = Math.max(150, Math.min(500, kb))
+              onSettingsChange({
+                maxBytes: Math.min(WHATSAPP_MAX_BYTES, clamped * 1024),
+              })
+            }}
+            onReset={() => onSettingsChange({ maxBytes: 485 * 1024 })}
+          />
         </div>
 
         <div className="action-buttons">
@@ -414,6 +382,18 @@ export function ToolRack({
             <Download size={15} />
             {t.downloadButton}
           </button>
+        </div>
+
+        <div className="import-guide">
+          <div className="import-guide-title">
+            <HelpCircle size={13} className="icon-crimson" />
+            <span>{t.importTitle}</span>
+          </div>
+          <ul className="import-list">
+            <li>{t.importAndroid}</li>
+            <li>{t.importIos}</li>
+            <li>{t.importDesktop}</li>
+          </ul>
         </div>
 
         <div className="wizard-nav">

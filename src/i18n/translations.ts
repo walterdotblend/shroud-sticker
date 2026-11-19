@@ -73,6 +73,17 @@ export interface Translations {
   errCorsBlocked: string
   errHtmlNoMedia: string
   errEmptyFile: string
+  canvasTransformTitle: string
+  scaleLabel: string
+  rotateLabel: string
+  canvasBgLabel: string
+  bgTransparent: string
+  bgObsidian: string
+  maxLimitHint: string
+  importTitle: string
+  importAndroid: string
+  importIos: string
+  importDesktop: string
 }
 
 const en: Translations = {
@@ -138,6 +149,17 @@ const en: Translations = {
   errCorsBlocked: 'Remote server blocked browser access (CORS). Download the file locally and drop it here.',
   errHtmlNoMedia: 'Could not find a playable video/GIF inside that webpage. Try pasting the direct .mp4/.gif link.',
   errEmptyFile: 'Downloaded file is empty.',
+  canvasTransformTitle: '512×512 CANVAS & TRANSPARENCY',
+  scaleLabel: 'Scale',
+  rotateLabel: 'Rotation',
+  canvasBgLabel: 'Sticker Background:',
+  bgTransparent: 'Transparent (Alpha)',
+  bgObsidian: 'Obsidian (#080709)',
+  maxLimitHint: 'WhatsApp hard limits enforced: 512×512 px · ≤ 500 KB · ≤ 10s.',
+  importTitle: 'HOW TO IMPORT INTO WHATSAPP',
+  importAndroid: 'Android: Open with "Sticker Maker" or "Personal Stickers for WhatsApp" and add the .webp pack.',
+  importIos: 'iPhone (iOS): Share the .webp file to "Sticker Maker Studio" or "Top Stickers" → Add to WhatsApp.',
+  importDesktop: 'WhatsApp Web / PC: Drag the .webp directly into a chat or use Sticker Maker on mobile to save as a sticker.',
 }
 
 const es: Translations = {
@@ -203,6 +225,17 @@ const es: Translations = {
   errCorsBlocked: 'El servidor remoto bloqueó la descarga por CORS. Descarga el archivo en tu PC y arrástralo aquí.',
   errHtmlNoMedia: 'No se encontró un video/GIF extraíble en esa página. Prueba con el enlace directo .mp4 o .gif.',
   errEmptyFile: 'El archivo descargado está vacío.',
+  canvasTransformTitle: 'CANVAS 512×512 & TRANSPARENCIA',
+  scaleLabel: 'Escala',
+  rotateLabel: 'Rotación',
+  canvasBgLabel: 'Fondo del Sticker:',
+  bgTransparent: 'Transparente (Alpha)',
+  bgObsidian: 'Obsidiana (#080709)',
+  maxLimitHint: 'Límite estricto de WhatsApp: 512×512 px · ≤ 500 KB · ≤ 10s.',
+  importTitle: 'CÓMO IMPORTARLO A WHATSAPP',
+  importAndroid: 'Android: Ábrelo con "Sticker Maker" o "Personal Stickers for WhatsApp" y añade el paquete .webp.',
+  importIos: 'iPhone (iOS): Comparte el .webp con "Sticker Maker Studio" → Añadir a WhatsApp.',
+  importDesktop: 'WhatsApp Web / PC: En algunos clientes puedes enviar el .webp o importarlo desde tu móvil con Sticker Maker para guardarlo en favoritos.',
 }
 
 const pt: Translations = {
@@ -231,6 +264,14 @@ const pt: Translations = {
   forgingButton: 'Forjando...',
   downloadButton: 'Baixar .webp',
   readyStatus: 'Pronto para forjar.',
+  canvasTransformTitle: 'CANVAS 512×512 & TRANSPARÊNCIA',
+  scaleLabel: 'Escala',
+  rotateLabel: 'Rotação',
+  canvasBgLabel: 'Fundo:',
+  bgTransparent: 'Transparente (Alpha)',
+  bgObsidian: 'Obsidiana (#080709)',
+  importTitle: 'COMO IMPORTAR NO WHATSAPP',
+  importAndroid: 'Android: Abra com "Sticker Maker" ou "Personal Stickers for WhatsApp".',
 }
 
 const fr: Translations = {

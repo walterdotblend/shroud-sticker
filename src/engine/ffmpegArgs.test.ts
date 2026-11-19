@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildStickerArgs,
-  buildStickerFilterGraph,
+  buildStickerFilterComplex,
+  computeBaseFitSize,
   computeEffectiveDuration,
   parseFfmpegDuration,
   parseFfmpegTime,
@@ -17,6 +18,11 @@ const baseSettings: StickerSettings = {
   reverse: false,
   crop: null,
   fitMode: 'contain-transparent',
+  canvasBg: 'transparent',
+  canvasScale: 1,
+  canvasX: 0,
+  canvasY: 0,
+  rotationDeg: 0,
   targetSize: 512,
   fps: 15,
   quality: 75,
@@ -40,24 +46,28 @@ describe('ffmpegArgs', () => {
     expect(computeEffectiveDuration(0, 3, 0.5)).toBeCloseTo(6, 2)
   })
 
-  it('builds transparent contain filter graph with crop and speed', () => {
-    const vf = buildStickerFilterGraph(
+  it('builds transparent 512x512 filter_complex with scale, rotation, and speed', () => {
+    const fc = buildStickerFilterComplex(
       {
         ...baseSettings,
         speed: 2,
         reverse: true,
-        crop: { x: 10, y: 20, width: 301, height: 301 },
+        canvasScale: 0.6,
+        canvasX: 20,
+        canvasY: -15,
+        rotationDeg: 30,
       },
       640,
       480
     )
-    expect(vf).toContain('setpts=0.5000*PTS')
-    expect(vf).toContain('reverse')
-    // Even dimensions clamped
-    expect(vf).toContain('crop=300:300:10:20')
-    expect(vf).toContain('fps=15')
-    expect(vf).toContain('format=rgba')
-    expect(vf).toContain('pad=512:512:(ow-iw)/2:(oh-ih)/2:color=0x00000000')
+    expect(computeBaseFitSize(640, 480, 512)).toEqual({ width: 512, height: 384 })
+    expect(fc).toContain('color=c=black@0.0:s=512x512')
+    expect(fc).toContain('setpts=0.5000*PTS')
+    expect(fc).toContain('reverse')
+    expect(fc).toContain('fps=15')
+    expect(fc).toContain('format=rgba')
+    expect(fc).toContain('rotate=')
+    expect(fc).toContain("overlay=x='(W-w)/2+20':y='(H-h)/2-15':shortest=1")
   })
 
   it('builds libwebp args with infinite loop and no audio', () => {

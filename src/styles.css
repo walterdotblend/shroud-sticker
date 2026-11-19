@@ -864,3 +864,198 @@ button:disabled {
 .action-buttons > button {
   flex: 1;
 }
+
+/* Prominent Language Prefix */
+.lang-prefix {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+/* 512x512 Transparent Sticker Canvas */
+.sticker-canvas-512 {
+  position: relative;
+  width: min(100%, 340px);
+  aspect-ratio: 1 / 1;
+  border: 1.5px solid var(--border-crimson);
+  border-radius: 6px;
+  overflow: hidden;
+  user-select: none;
+  touch-action: none;
+}
+
+.sticker-canvas-512.bg-checker {
+  background-image:
+    linear-gradient(45deg, #171216 25%, transparent 25%),
+    linear-gradient(-45deg, #171216 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #171216 75%),
+    linear-gradient(-45deg, transparent 75%, #171216 75%);
+  background-size: 20px 20px;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0;
+  background-color: #0d0a0c;
+}
+
+.sticker-canvas-512.bg-obsidian {
+  background-color: #080709;
+}
+
+.canvas-layer {
+  position: absolute;
+  border: 1px dashed rgba(230, 194, 194, 0.75);
+  cursor: move;
+  transform-origin: center center;
+}
+
+.canvas-layer-media {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: fill;
+  pointer-events: none;
+}
+
+.rotate-stem {
+  position: absolute;
+  left: 50%;
+  top: -18px;
+  width: 1px;
+  height: 18px;
+  background: var(--bone-rose);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.rotate-handle {
+  position: absolute;
+  left: 50%;
+  top: -26px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--crimson-bright);
+  border: 1.5px solid var(--bone-rose);
+  transform: translateX(-50%);
+  cursor: grab;
+}
+
+.canvas-badge-512 {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(8, 7, 9, 0.84);
+  border: 1px solid var(--border-dim);
+  color: var(--bone-rose);
+  font-size: 10px;
+  pointer-events: none;
+}
+
+/* Circular Dials */
+.dials-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-around;
+  gap: 12px;
+  padding: 6px 0;
+}
+
+.dial-control {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.dial-knob {
+  cursor: ns-resize;
+  touch-action: none;
+  user-select: none;
+}
+
+.dial-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.dial-ring-bg {
+  fill: #130e12;
+  stroke: var(--border-dim);
+  stroke-width: 4;
+}
+
+.dial-ring-active {
+  fill: none;
+  stroke: var(--crimson-bright);
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+.dial-needle {
+  stroke: var(--bone-rose);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+}
+
+.dial-dot {
+  fill: var(--crimson-bright);
+}
+
+.dial-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.2;
+}
+
+.dial-label {
+  font-size: 10.5px;
+  color: var(--text-muted);
+}
+
+.dial-value {
+  font-size: 11.5px;
+  color: var(--bone-rose);
+}
+
+/* Speed Number Box */
+.speed-input-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.speed-number-box {
+  width: 68px;
+  padding: 3px 6px;
+  text-align: center;
+}
+
+/* WhatsApp Import Guide */
+.import-guide {
+  margin-top: 4px;
+  padding: 10px 12px;
+  background: rgba(10, 8, 10, 0.78);
+  border: 1px solid var(--border-dim);
+  border-radius: 6px;
+}
+
+.import-guide-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--bone-rose);
+  font-size: 11px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.import-list {
+  margin: 0;
+  padding-left: 16px;
+  color: var(--text-muted);
+  font-size: 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
