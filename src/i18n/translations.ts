@@ -1,13 +1,13 @@
 export type LangCode = 'en' | 'es' | 'pt' | 'fr' | 'de' | 'ja' | 'ru'
 
 export const SUPPORTED_LANGS: { code: LangCode; label: string }[] = [
-  { code: 'en', label: 'EN' },
-  { code: 'es', label: 'ES' },
-  { code: 'pt', label: 'PT' },
-  { code: 'fr', label: 'FR' },
-  { code: 'de', label: 'DE' },
-  { code: 'ja', label: 'JA' },
-  { code: 'ru', label: 'RU' },
+  { code: 'en', label: 'English' },
+  { code: 'es', label: 'Español' },
+  { code: 'pt', label: 'Português' },
+  { code: 'fr', label: 'Français' },
+  { code: 'de', label: 'Deutsch' },
+  { code: 'ja', label: '日本語' },
+  { code: 'ru', label: 'Русский' },
 ]
 
 export interface Translations {

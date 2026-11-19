@@ -9,6 +9,7 @@ import type { Translations } from '../i18n/translations'
 const CORS_RELAYS = [
   (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
   (u: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+  (u: string) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
 ]
 
 const SOCIAL_VIDEO_HOSTS = [
@@ -136,6 +137,39 @@ async function fetchWithCorsFallback(url: string, onLog?: (msg: string) => void)
   throw new Error('CORS_BLOCKED')
 }
 
+async function tryTwitterExtract(url: string, onLog?: (msg: string) => void): Promise<string | null> {
+  const m = /^https?:\/\/(?:www\.|mobile\.)?(?:twitter\.com|x\.com)\/([^/]+)\/status\/(\d+)/i.exec(url)
+  if (!m) return null
+  try {
+    onLog?.(`> Consultando extractor Twitter/X (vxtwitter)...`)
+    const res = await fetch(`https://api.vxtwitter.com/${m[1]}/status/${m[2]}`)
+    if (!res.ok) return null
+    const data = (await res.json()) as {
+      media_extended?: Array<{ type?: string; url?: string }>
+      mediaURLs?: string[]
+    }
+    const videoItem = data.media_extended?.find((item) => item.type === 'video' || item.type === 'gif')
+    if (videoItem?.url) return videoItem.url
+    if (data.mediaURLs?.[0]) return data.mediaURLs[0]
+    return null
+  } catch {
+    return null
+  }
+}
+
+async function tryTikTokExtract(url: string, onLog?: (msg: string) => void): Promise<string | null> {
+  if (!/tiktok\.com/i.test(url)) return null
+  try {
+    onLog?.(`> Consultando extractor TikTok...`)
+    const res = await fetch(`https://www.tikwm.com/api/?url=${encodeURIComponent(url)}`)
+    if (!res.ok) return null
+    const data = (await res.json()) as { data?: { play?: string; wmplay?: string } }
+    return data?.data?.play || data?.data?.wmplay || null
+  } catch {
+    return null
+  }
+}
+
 async function tryCobaltExtract(url: string, onLog?: (msg: string) => void): Promise<string | null> {
   try {
     onLog?.(`> Consultando extractor de video integrado (Cobalt)...`)
@@ -174,12 +208,22 @@ export async function downloadMediaFromUrl(
 
   let targetUrl = normalizeMediaUrl(originalUrl)
 
-  // If it's a social video page (YouTube, TikTok, X, Instagram, Reddit), try Cobalt first
-  if (isSocialVideoPage(originalUrl)) {
-    const extracted = await tryCobaltExtract(originalUrl, onLog)
-    if (extracted) {
-      targetUrl = extracted
-      onLog?.(`> Stream extraído correctamente.`)
+  // Platform-specific CORS-friendly extractors (Twitter/X, TikTok, then Cobalt)
+  const twitterUrl = await tryTwitterExtract(originalUrl, onLog)
+  if (twitterUrl) {
+    targetUrl = twitterUrl
+    onLog?.(`> Video de Twitter/X extraído.`)
+  } else {
+    const tiktokUrl = await tryTikTokExtract(originalUrl, onLog)
+    if (tiktokUrl) {
+      targetUrl = tiktokUrl
+      onLog?.(`> Video de TikTok extraído.`)
+    } else if (isSocialVideoPage(originalUrl)) {
+      const extracted = await tryCobaltExtract(originalUrl, onLog)
+      if (extracted) {
+        targetUrl = extracted
+        onLog?.(`> Stream extraído correctamente.`)
+      }
     }
   }
 

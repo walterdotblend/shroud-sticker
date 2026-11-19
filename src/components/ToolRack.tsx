@@ -137,7 +137,7 @@ export function ToolRack({
           <p className="wizard-sub">{t.step1Sub}</p>
 
           <div
-            className={`dropzone dropzone-lg ${dragOver ? 'drag-over' : ''}`}
+            className={`dropzone dropzone-square ${dragOver ? 'drag-over' : ''}`}
             onDragOver={(e) => {
               e.preventDefault()
               setDragOver(true)
@@ -157,6 +157,7 @@ export function ToolRack({
                 e.target.value = ''
               }}
             />
+            <Upload size={28} className="icon-crimson" />
             <span className="dropzone-main">
               {media ? `${t.dropLoaded} ${media.name}` : t.dropMain}
             </span>
