@@ -6,8 +6,8 @@ import type { Translations } from '../i18n/translations'
  * uses CORS relays when needed, and supports social video extraction via Cobalt API.
  */
 
-// Optional personal Cloudflare Worker relay URL (e.g. 'https://shroud-relay.user.workers.dev')
-const CUSTOM_WORKER_RELAY = ''
+// Personal Cloudflare Worker streaming CORS relay URL
+const CUSTOM_WORKER_RELAY = 'https://shroud-relay.walyoven.workers.dev'
 
 function getRelayBuilders(): Array<(u: string) => string> {
   let saved = CUSTOM_WORKER_RELAY
