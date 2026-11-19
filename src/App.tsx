@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Download, Flame, ShieldCheck, Skull, Terminal } from 'lucide-react'
+import { Globe, ShieldCheck, Skull, Terminal } from 'lucide-react'
 import { BloodBackdrop } from './components/backdrop/BloodBackdrop'
 import { CropStage } from './components/CropStage'
-import { ToolRack } from './components/ToolRack'
+import { ToolRack, type WizardStep } from './components/ToolRack'
 import { stickerEngine } from './engine/ffmpegClient'
 import { probeMediaFile } from './engine/mediaProbe'
 import {
@@ -15,6 +15,12 @@ import {
   type StickerSettings,
 } from './engine/types'
 import { downloadMediaFromUrl } from './engine/urlLoader'
+import {
+  detectInitialLang,
+  getTranslations,
+  SUPPORTED_LANGS,
+  type LangCode,
+} from './i18n/translations'
 
 const INITIAL_SETTINGS: StickerSettings = {
   trimStart: 0,
@@ -32,6 +38,10 @@ const INITIAL_SETTINGS: StickerSettings = {
 }
 
 export function App() {
+  const [lang, setLang] = useState<LangCode>(() => detectInitialLang())
+  const t = getTranslations(lang)
+
+  const [step, setStep] = useState<WizardStep>(1)
   const [media, setMedia] = useState<MediaInfo | null>(null)
   const [settings, setSettings] = useState<StickerSettings>(INITIAL_SETTINGS)
   const [aspect, setAspect] = useState<CropAspect>('free')
@@ -42,14 +52,23 @@ export function App() {
 
   const [encoding, setEncoding] = useState(false)
   const [progress, setProgress] = useState(0)
-  const [statusText, setStatusText] = useState('Listo para forjar.')
+  const [statusText, setStatusText] = useState(() => getTranslations(detectInitialLang()).readyStatus)
   const [logs, setLogs] = useState<string[]>([
-    '> SHROUD // WhatsApp Sticker Forge iniciado.',
-    '> Motor: FFmpeg.wasm (100% local en tu navegador, cero servidores).',
+    '> SHROUD // WhatsApp Sticker Forge ready.',
+    '> Engine: FFmpeg.wasm (100% client-side, zero uploads).',
   ])
   const [result, setResult] = useState<EncodeResult | null>(null)
 
   const logEndRef = useRef<HTMLDivElement>(null)
+
+  const handleLangChange = (next: LangCode) => {
+    setLang(next)
+    try {
+      localStorage.setItem('shroud_lang', next)
+    } catch {
+      // ignore
+    }
+  }
 
   const appendLog = useCallback((line: string) => {
     setLogs((prev) => [...prev.slice(-80), line])
@@ -59,7 +78,6 @@ export function App() {
     logEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [logs])
 
-  // Cleanup object URLs on unmount or replacement
   useEffect(() => {
     return () => {
       if (media?.objectUrl) URL.revokeObjectURL(media.objectUrl)
@@ -88,24 +106,25 @@ export function App() {
         reverse: false,
         crop: null,
       }))
+      setStep(2)
       appendLog(
-        `> Medio cargado: ${info.name} (${info.width}×${info.height}, ${info.duration.toFixed(2)}s, ${(
+        `> Media loaded: ${info.name} (${info.width}×${info.height}, ${info.duration.toFixed(2)}s, ${(
           info.sizeBytes / 1024
         ).toFixed(1)} KB)`
       )
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
       setUrlError(msg)
-      appendLog(`! Error cargando archivo: ${msg}`)
+      appendLog(`! Error: ${msg}`)
     }
   }
 
   const handleUrlSubmit = async (url: string) => {
     setUrlLoading(true)
     setUrlError(null)
-    appendLog(`> Descargando medio desde URL: ${url}`)
+    appendLog(`> Fetching URL: ${url}`)
     try {
-      const file = await downloadMediaFromUrl(url)
+      const file = await downloadMediaFromUrl(url, t, appendLog)
       await loadFile(file)
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
@@ -124,7 +143,7 @@ export function App() {
     if (!media || encoding) return
     setEncoding(true)
     setProgress(0.02)
-    setStatusText('Preparando FFmpeg.wasm...')
+    setStatusText(t.forgingButton)
     setResult(null)
 
     try {
@@ -138,12 +157,12 @@ export function App() {
       setResult(encoded)
       setViewMode('result')
       const kb = (encoded.sizeBytes / 1024).toFixed(1)
-      setStatusText(`Completado · ${kb} KB (${encoded.fpsUsed}fps, q${encoded.qualityUsed})`)
-      appendLog(`> ✓ Sticker listo: ${kb} KB | ${encoded.width}×${encoded.height} | ${encoded.durationSec.toFixed(2)}s`)
+      setStatusText(`${t.forgedStatus} · ${kb} KB (${encoded.fpsUsed}fps, q${encoded.qualityUsed})`)
+      appendLog(`> ✓ Ready: ${kb} KB | ${encoded.width}×${encoded.height} | ${encoded.durationSec.toFixed(2)}s`)
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
       setStatusText(`Error: ${msg}`)
-      appendLog(`! Error en codificación: ${msg}`)
+      appendLog(`! Error: ${msg}`)
     } finally {
       setEncoding(false)
     }
@@ -169,48 +188,101 @@ export function App() {
         <div className="topbar-left">
           <div className="brand-pill">
             <Skull size={14} className="icon-crimson" />
-            <span className="brand-name">SHROUD // STICKER FORGE</span>
+            <span className="brand-name">{t.appTitle}</span>
           </div>
           <span className="status-pill">
             <ShieldCheck size={12} />
-            100% LOCAL · WASM
+            {t.localBadge}
           </span>
         </div>
 
         <div className="topbar-right">
-          <span className="spec-pill">WHATSAPP: 512×512 · ≤500 KB · ≤10s · WEBP</span>
+          <span className="spec-pill">{t.specBadge}</span>
+          <label className="lang-pill" title="Language">
+            <Globe size={12} className="icon-crimson" />
+            <select
+              value={lang}
+              onChange={(e) => handleLangChange(e.target.value as LangCode)}
+              className="lang-select"
+            >
+              {SUPPORTED_LANGS.map((l) => (
+                <option key={l.code} value={l.code}>
+                  {l.label}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
       </header>
 
+      {/* Dynamic Step-by-Step Wizard Bar */}
+      <nav className="stepper-bar" aria-label="Steps">
+        <button
+          type="button"
+          className={`step-tab ${step === 1 ? 'active' : ''}`}
+          onClick={() => setStep(1)}
+        >
+          {t.step1Title}
+        </button>
+        <span className="step-sep">›</span>
+        <button
+          type="button"
+          className={`step-tab ${step === 2 ? 'active' : ''}`}
+          disabled={!media}
+          onClick={() => setStep(2)}
+        >
+          {t.step2Title}
+        </button>
+        <span className="step-sep">›</span>
+        <button
+          type="button"
+          className={`step-tab ${step === 3 ? 'active' : ''}`}
+          disabled={!media}
+          onClick={() => setStep(3)}
+        >
+          {t.step3Title}
+        </button>
+      </nav>
+
       {/* Main studio workspace */}
-      <main className="workspace-grid">
-        <CropStage
-          media={media}
-          crop={settings.crop}
-          aspect={aspect}
-          trimStart={settings.trimStart}
-          trimEnd={settings.trimEnd}
-          speed={settings.speed}
-          result={result}
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
-          onCropChange={(crop) => handleSettingsChange({ crop })}
-        />
+      <main className={`workspace-grid ${step === 1 && !media ? 'single-step' : ''}`}>
+        {(step !== 1 || media) && (
+          <CropStage
+            t={t}
+            media={media}
+            crop={settings.crop}
+            aspect={aspect}
+            trimStart={settings.trimStart}
+            trimEnd={settings.trimEnd}
+            speed={settings.speed}
+            result={result}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+            onCropChange={(crop) => handleSettingsChange({ crop })}
+          />
+        )}
 
         <ToolRack
+          t={t}
+          step={step}
           media={media}
           settings={settings}
           aspect={aspect}
           urlLoading={urlLoading}
           urlError={urlError}
+          encoding={encoding}
+          result={result}
+          onStepChange={setStep}
           onFileSelected={loadFile}
           onUrlSubmit={handleUrlSubmit}
           onSettingsChange={handleSettingsChange}
           onAspectChange={setAspect}
+          onForge={handleForge}
+          onDownload={handleDownload}
         />
       </main>
 
-      {/* Bottom Terminal & Forge Action Bar */}
+      {/* Bottom Terminal & Progress Bar */}
       <footer className="panel footer-terminal">
         <div className="terminal-log-box">
           <div className="terminal-header">
@@ -236,28 +308,6 @@ export function App() {
             <div className="progress-track">
               <div className="progress-fill" style={{ width: `${Math.round(progress * 100)}%` }} />
             </div>
-          </div>
-
-          <div className="action-buttons">
-            <button
-              type="button"
-              className="btn-crimson"
-              disabled={!media || encoding}
-              onClick={handleForge}
-            >
-              <Flame size={15} />
-              {encoding ? 'Forjando...' : 'Forjar Sticker (.webp)'}
-            </button>
-
-            <button
-              type="button"
-              className="btn-bone"
-              disabled={!result || encoding}
-              onClick={handleDownload}
-            >
-              <Download size={15} />
-              Descargar .webp
-            </button>
           </div>
         </div>
       </footer>

@@ -8,7 +8,7 @@ import {
   planAutoCompressSteps,
 } from './ffmpegArgs'
 import { WHATSAPP_SAFE_TARGET_BYTES, type StickerSettings } from './types'
-import { normalizeMediaUrl } from './urlLoader'
+import { extractMediaUrlFromHtml, isSocialVideoPage, normalizeMediaUrl } from './urlLoader'
 
 const baseSettings: StickerSettings = {
   trimStart: 0,
@@ -79,7 +79,19 @@ describe('ffmpegArgs', () => {
     expect(steps[steps.length - 1].quality).toBeLessThan(75)
   })
 
-  it('normalizes imgur gifv URLs to mp4', () => {
+  it('normalizes imgur gifv and giphy page URLs', () => {
     expect(normalizeMediaUrl('https://i.imgur.com/abc123.gifv')).toBe('https://i.imgur.com/abc123.mp4')
+    expect(normalizeMediaUrl('https://giphy.com/gifs/funny-cat-3o7abKhOpu0NwenH3O')).toBe(
+      'https://media.giphy.com/media/3o7abKhOpu0NwenH3O/giphy.mp4'
+    )
+  })
+
+  it('extracts og:video and tenor mp4 from HTML pages', () => {
+    const html = '<meta property="og:video" content="https://media.tenor.com/xyz/test.mp4" />'
+    expect(extractMediaUrlFromHtml(html, 'https://tenor.com/view/test-123')).toBe(
+      'https://media.tenor.com/xyz/test.mp4'
+    )
+    expect(isSocialVideoPage('https://www.youtube.com/shorts/abc123')).toBe(true)
+    expect(isSocialVideoPage('https://example.com/file.gif')).toBe(false)
   })
 })

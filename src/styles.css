@@ -134,9 +134,77 @@ body,
   border-color: var(--border-dim);
 }
 
+.lang-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 8px;
+  background: var(--panel-bg);
+  border: 1px solid var(--border-crimson);
+  border-radius: 6px;
+}
+
+.lang-select {
+  background: transparent;
+  border: none;
+  color: var(--bone-rose);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+}
+
+.lang-select option {
+  background: #110d10;
+  color: var(--text-main);
+}
+
 .icon-crimson {
   color: var(--crimson-bright);
   flex-shrink: 0;
+}
+
+/* Stepper Bar */
+.stepper-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--panel-bg);
+  border: 1px solid var(--border-dim);
+  border-radius: 7px;
+  backdrop-filter: blur(10px);
+}
+
+.step-tab {
+  padding: 5px 12px;
+  border-radius: 5px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.step-tab.active {
+  border-color: var(--bone-rose);
+  color: var(--bone-rose);
+  background: rgba(158, 31, 40, 0.25);
+}
+
+.step-tab:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.step-sep {
+  color: var(--border-crimson);
+  font-weight: 700;
 }
 
 /* Workspace Grid */
@@ -146,6 +214,38 @@ body,
   gap: 12px;
   align-items: stretch;
   flex: 1;
+}
+
+.workspace-grid.single-step {
+  grid-template-columns: minmax(0, 680px);
+  justify-content: center;
+  align-items: start;
+}
+
+.wizard-card {
+  gap: 12px;
+}
+
+.wizard-sub {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 11.5px;
+}
+
+.dropzone-lg {
+  padding: 28px 16px;
+}
+
+.wizard-nav {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(122, 59, 66, 0.25);
+}
+
+.wizard-nav > button:only-child {
+  margin-left: auto;
 }
 
 @media (max-width: 980px) {

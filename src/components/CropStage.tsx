@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { Eye, Pause, Play, RotateCcw, Scissors } from 'lucide-react'
 import type { CropAspect, CropRect, EncodeResult, MediaInfo } from '../engine/types'
+import type { Translations } from '../i18n/translations'
 
 interface CropStageProps {
+  t: Translations
   media: MediaInfo | null
   crop: CropRect | null
   aspect: CropAspect
@@ -33,6 +35,7 @@ function aspectToRatio(aspect: CropAspect): number | null {
 }
 
 export function CropStage({
+  t,
   media,
   crop,
   aspect,
@@ -175,7 +178,7 @@ export function CropStage({
       <div className="panel-header">
         <div className="panel-title-group">
           <Scissors size={14} className="icon-crimson" />
-          <span className="panel-title">VISOR // RECORTE &amp; PREVIEW</span>
+          <span className="panel-title">{t.viewerTitle}</span>
         </div>
         <div className="stage-tabs">
           <button
@@ -183,7 +186,7 @@ export function CropStage({
             className={`tab-pill ${viewMode === 'source' ? 'active' : ''}`}
             onClick={() => onViewModeChange('source')}
           >
-            Original
+            {t.tabOriginal}
           </button>
           <button
             type="button"
@@ -192,7 +195,7 @@ export function CropStage({
             onClick={() => onViewModeChange('result')}
           >
             <Eye size={12} />
-            Sticker (.webp)
+            {t.tabSticker}
           </button>
         </div>
       </div>
@@ -203,15 +206,13 @@ export function CropStage({
             <div className="eerie-sigil" aria-hidden="true">
               ☽ ✦ ☾
             </div>
-            <p className="stage-empty-title">Ningún medio invocado</p>
-            <p className="stage-empty-sub">
-              Arrastra un GIF, MP4 o WebM al panel derecho, o pega una URL directa para comenzar.
-            </p>
+            <p className="stage-empty-title">{t.emptyTitle}</p>
+            <p className="stage-empty-sub">{t.emptySub}</p>
           </div>
         ) : viewMode === 'result' && result ? (
           <div className="result-preview-wrap">
             <div className="checkerboard-box">
-              <img src={result.url} alt="Sticker animado para WhatsApp" className="result-webp-img" />
+              <img src={result.url} alt="WhatsApp Animated Sticker" className="result-webp-img" />
             </div>
             <div className="result-stats-row">
               <span className="stat-chip">
@@ -220,7 +221,7 @@ export function CropStage({
               <span className="stat-chip">{result.durationSec.toFixed(2)}s</span>
               <span className="stat-chip">{result.fpsUsed} FPS · q{result.qualityUsed}</span>
               <span className={`stat-chip ${result.whatsappValid ? 'chip-ok' : 'chip-warn'}`}>
-                {(result.sizeBytes / 1024).toFixed(1)} KB {result.whatsappValid ? '· WHATSAPP OK ✓' : '· EXCEDE LÍMITE'}
+                {(result.sizeBytes / 1024).toFixed(1)} KB {result.whatsappValid ? t.whatsappOk : t.whatsappTooBig}
               </span>
             </div>
           </div>
@@ -273,7 +274,7 @@ export function CropStage({
               <div className="stage-transport">
                 <button type="button" className="btn-ghost-sm" onClick={togglePlay}>
                   {playing ? <Pause size={13} /> : <Play size={13} />}
-                  {playing ? 'Pausa' : 'Play'}
+                  {playing ? t.pause : t.play}
                 </button>
                 <span className="transport-time">
                   {currentTime.toFixed(2)}s / {media.duration.toFixed(2)}s
@@ -282,10 +283,10 @@ export function CropStage({
                   type="button"
                   className="btn-ghost-sm"
                   onClick={() => onCropChange(null)}
-                  title="Restablecer recorte"
+                  title={t.resetCrop}
                 >
                   <RotateCcw size={12} />
-                  Reset Crop
+                  {t.resetCrop}
                 </button>
               </div>
             )}
