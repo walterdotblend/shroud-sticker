@@ -10,6 +10,7 @@ import {
 } from './ffmpegArgs'
 import { WHATSAPP_SAFE_TARGET_BYTES, type StickerSettings } from './types'
 import { extractMediaUrlFromHtml, isSocialVideoPage, normalizeMediaUrl } from './urlLoader'
+import { selectWeightedBanner } from '../components/AdBannerRail'
 
 const baseSettings: StickerSettings = {
   trimStart: 0,
@@ -104,5 +105,14 @@ describe('ffmpegArgs', () => {
     )
     expect(isSocialVideoPage('https://www.youtube.com/shorts/abc123')).toBe(true)
     expect(isSocialVideoPage('https://example.com/file.gif')).toBe(false)
+  })
+
+  it('selects weighted banners per slot and language (Zylo SWRR)', () => {
+    const banners = [
+      { id: 'b1', name: 'Left 1', slot: 'viewer_left' as const, mediaUrl: '/a.svg', clickUrl: 'https://a.com', weight: 10 },
+      { id: 'b2', name: 'Right 1', slot: 'viewer_right' as const, mediaUrl: '/b.svg', clickUrl: 'https://b.com', weight: 5 },
+    ]
+    expect(selectWeightedBanner(banners, 'viewer_left', 'es')?.id).toBe('b1')
+    expect(selectWeightedBanner(banners, 'viewer_right', 'en')?.id).toBe('b2')
   })
 })

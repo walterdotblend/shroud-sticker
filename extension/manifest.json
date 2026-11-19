@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "SHROUD // WhatsApp Sticker Forge Launcher",
+  "version": "1.0.0",
+  "description": "Paste any GIF or video link (or use current tab) to open it directly in SHROUD WhatsApp Sticker Forge.",
+  "permissions": ["activeTab"],
+  "action": {
+    "default_title": "SHROUD Sticker Forge",
+    "default_popup": "popup.html"
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "shroud-sticker@walterdotblend.github.io",
+      "strict_min_version": "109.0"
+    }
+  }
+}

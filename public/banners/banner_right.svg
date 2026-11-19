@@ -1,0 +1,32 @@
+<svg width="160" height="600" viewBox="0 0 160 600" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGradR" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a0709"/>
+      <stop offset="50%" stop-color="#1b090e"/>
+      <stop offset="100%" stop-color="#060507"/>
+    </linearGradient>
+    <linearGradient id="btnGradR" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#6b131a"/>
+      <stop offset="100%" stop-color="#a8202b"/>
+    </linearGradient>
+  </defs>
+  <rect width="160" height="600" rx="14" fill="url(#bgGradR)" stroke="#7a3b42" stroke-width="1.5"/>
+  <rect x="20" y="24" width="120" height="24" rx="6" fill="rgba(158,31,40,0.22)" stroke="#b5454f" stroke-width="1"/>
+  <text x="80" y="40" fill="#e6c2c2" font-size="10" font-weight="bold" font-family="monospace" text-anchor="middle">SHROUD EXT</text>
+  <circle cx="80" cy="118" r="36" fill="rgba(158,31,40,0.25)" stroke="#cc3540" stroke-width="1.5"/>
+  <text x="80" y="126" fill="#e6c2c2" font-size="24" font-family="monospace" text-anchor="middle">⚡</text>
+  <text x="80" y="195" fill="#e8dfe0" font-size="13.5" font-weight="bold" font-family="monospace" text-anchor="middle">1-Click</text>
+  <text x="80" y="215" fill="#c29b9d" font-size="12" font-weight="bold" font-family="monospace" text-anchor="middle">Browser Addon</text>
+  <circle cx="26" cy="270" r="3.5" fill="#cc3540"/>
+  <text x="38" y="274" fill="#e8dfe0" font-size="10.5" font-family="monospace">Paste Any Link</text>
+  <circle cx="26" cy="305" r="3.5" fill="#cc3540"/>
+  <text x="38" y="309" fill="#e8dfe0" font-size="10.5" font-family="monospace">Auto-Open Forge</text>
+  <circle cx="26" cy="340" r="3.5" fill="#cc3540"/>
+  <text x="38" y="344" fill="#e8dfe0" font-size="10.5" font-family="monospace">Chrome &amp; Firefox</text>
+  <circle cx="26" cy="375" r="3.5" fill="#cc3540"/>
+  <text x="38" y="379" fill="#e8dfe0" font-size="10.5" font-family="monospace">100% Local</text>
+  <line x1="24" y1="420" x2="136" y2="420" stroke="#4c272c" stroke-width="1"/>
+  <text x="80" y="452" fill="#8f8285" font-size="10" font-family="monospace" text-anchor="middle">Instant Stickers</text>
+  <rect x="20" y="515" width="120" height="40" rx="6" fill="url(#btnGradR)" stroke="#e6c2c2" stroke-width="1"/>
+  <text x="80" y="540" fill="#fff2f2" font-size="11.5" font-weight="bold" font-family="monospace" text-anchor="middle">GET EXTENSION</text>
+</svg>

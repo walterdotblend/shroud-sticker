@@ -1,0 +1,24 @@
+[
+  {
+    "id": "shroud_left_arrowbrake",
+    "name": "ArrowBrake Desktop",
+    "slot": "viewer_left",
+    "mediaUrl": "./banners/banner_left.svg",
+    "mediaType": "image",
+    "clickUrl": "https://github.com/walterdotblend/shroud-sticker",
+    "weight": 10,
+    "languages": ["all"],
+    "active": true
+  },
+  {
+    "id": "shroud_right_ext",
+    "name": "SHROUD Browser Extension",
+    "slot": "viewer_right",
+    "mediaUrl": "./banners/banner_right.svg",
+    "mediaType": "image",
+    "clickUrl": "https://github.com/walterdotblend/shroud-sticker/tree/main/extension",
+    "weight": 10,
+    "languages": ["all"],
+    "active": true
+  }
+]

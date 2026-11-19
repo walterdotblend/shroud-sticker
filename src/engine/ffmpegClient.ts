@@ -6,6 +6,7 @@ import {
   parseFfmpegTime,
   planAutoCompressSteps,
 } from './ffmpegArgs'
+import { encodeStickerNative } from './nativeWebpEncoder'
 import type { EncodePassLog, EncodeResult, MediaInfo, StickerSettings } from './types'
 import { WHATSAPP_MAX_BYTES } from './types'
 
@@ -65,6 +66,12 @@ class StickerFfmpegEngine {
     settings: StickerSettings,
     callbacks: EngineCallbacks
   ): Promise<EncodeResult> {
+    try {
+      return await encodeStickerNative(media, settings, callbacks)
+    } catch (nativeErr) {
+      callbacks.onLog(`> Native fast path fallback (${String(nativeErr)}), switching to FFmpeg.wasm...`)
+    }
+
     const ff = await this.ensureLoaded(callbacks.onLog)
     const ext = media.name.split('.').pop()?.toLowerCase() || (media.isGif ? 'gif' : 'mp4')
     const inputName = `input.${ext}`

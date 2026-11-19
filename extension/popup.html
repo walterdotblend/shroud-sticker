@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>SHROUD Launcher</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 14px;
+        width: 310px;
+        background: #0a0709;
+        color: #e8dfe0;
+        font-family: 'JetBrains Mono', ui-monospace, monospace;
+        font-size: 12px;
+        border: 1px solid #7a3b42;
+      }
+      .title {
+        color: #e6c2c2;
+        font-weight: 700;
+        font-size: 12.5px;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .input {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 8px 10px;
+        background: #120c10;
+        border: 1px solid #7a3b42;
+        border-radius: 5px;
+        color: #e8dfe0;
+        font-family: inherit;
+        font-size: 11.5px;
+        outline: none;
+        margin-bottom: 8px;
+      }
+      .input:focus {
+        border-color: #cc3540;
+      }
+      .btn {
+        width: 100%;
+        padding: 8px 12px;
+        border-radius: 5px;
+        border: 1px solid #e6c2c2;
+        background: linear-gradient(135deg, #8b1922 0%, #5c1017 100%);
+        color: #fff2f2;
+        font-family: inherit;
+        font-size: 11.5px;
+        font-weight: 600;
+        cursor: pointer;
+        margin-bottom: 6px;
+      }
+      .btn-sec {
+        width: 100%;
+        padding: 6px 10px;
+        border-radius: 5px;
+        border: 1px solid #4c272c;
+        background: #150f13;
+        color: #c29b9d;
+        font-family: inherit;
+        font-size: 11px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="title">☽ SHROUD // STICKER FORGE</div>
+    <input
+      id="urlInput"
+      type="url"
+      class="input"
+      placeholder="https://... paste GIF or video link"
+      autofocus
+    />
+    <button id="goBtn" class="btn">Forge Sticker →</button>
+    <button id="tabBtn" class="btn-sec">Use Current Tab URL</button>
+    <script src="popup.js"></script>
+  </body>
+</html>

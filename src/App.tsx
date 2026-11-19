@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Globe, ShieldCheck, Skull, Terminal } from 'lucide-react'
+import { AdBannerRail } from './components/AdBannerRail'
 import { BloodBackdrop } from './components/backdrop/BloodBackdrop'
 import { CropStage } from './components/CropStage'
 import { ToolRack, type WizardStep } from './components/ToolRack'
@@ -130,21 +131,36 @@ export function App() {
     }
   }
 
-  const handleUrlSubmit = async (url: string) => {
-    setUrlLoading(true)
-    setUrlError(null)
-    appendLog(`> Fetching URL: ${url}`)
-    try {
-      const file = await downloadMediaFromUrl(url, t, appendLog)
-      await loadFile(file)
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err)
-      setUrlError(msg)
-      appendLog(`! ${msg}`)
-    } finally {
-      setUrlLoading(false)
+  const handleUrlSubmit = useCallback(
+    async (url: string) => {
+      setUrlLoading(true)
+      setUrlError(null)
+      appendLog(`> Fetching URL: ${url}`)
+      try {
+        const file = await downloadMediaFromUrl(url, t, appendLog)
+        await loadFile(file)
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err)
+        setUrlError(msg)
+        appendLog(`! ${msg}`)
+      } finally {
+        setUrlLoading(false)
+      }
+    },
+    [t, appendLog]
+  )
+
+  // Auto-load ?url=... parameter (from SHROUD Chrome/Firefox extension)
+  const autoUrlHandledRef = useRef(false)
+  useEffect(() => {
+    if (autoUrlHandledRef.current) return
+    const params = new URLSearchParams(window.location.search)
+    const incomingUrl = params.get('url')?.trim()
+    if (incomingUrl && /^https?:\/\//i.test(incomingUrl)) {
+      autoUrlHandledRef.current = true
+      handleUrlSubmit(incomingUrl)
     }
-  }
+  }, [handleUrlSubmit])
 
   const handleSettingsChange = (patch: Partial<StickerSettings>) => {
     setSettings((prev) => ({ ...prev, ...patch }))
@@ -218,6 +234,8 @@ export function App() {
   return (
     <div className="app-shell">
       <BloodBackdrop />
+      <AdBannerRail slot="viewer_left" lang={lang} />
+      <AdBannerRail slot="viewer_right" lang={lang} />
 
       {/* Top Hyprland-style status bar */}
       <header className="topbar">
