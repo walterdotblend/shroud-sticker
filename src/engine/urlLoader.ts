@@ -6,11 +6,28 @@ import type { Translations } from '../i18n/translations'
  * uses CORS relays when needed, and supports social video extraction via Cobalt API.
  */
 
-const CORS_RELAYS = [
-  (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
-  (u: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-  (u: string) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
-]
+// Optional personal Cloudflare Worker relay URL (e.g. 'https://shroud-relay.user.workers.dev')
+const CUSTOM_WORKER_RELAY = ''
+
+function getRelayBuilders(): Array<(u: string) => string> {
+  let saved = CUSTOM_WORKER_RELAY
+  try {
+    saved = localStorage.getItem('shroud_relay_url') || CUSTOM_WORKER_RELAY
+  } catch {
+    // ignore
+  }
+  const list: Array<(u: string) => string> = []
+  if (saved && /^https?:\/\//i.test(saved)) {
+    const clean = saved.replace(/\/+$/, '')
+    list.push((u: string) => `${clean}/?url=${encodeURIComponent(u)}`)
+  }
+  list.push(
+    (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+    (u: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+    (u: string) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`
+  )
+  return list
+}
 
 const SOCIAL_VIDEO_HOSTS = [
   'youtube.com',
@@ -123,7 +140,7 @@ async function fetchWithCorsFallback(url: string, onLog?: (msg: string) => void)
     // fall through to CORS relays
   }
 
-  for (const buildRelay of CORS_RELAYS) {
+  for (const buildRelay of getRelayBuilders()) {
     try {
       const relayUrl = buildRelay(url)
       onLog?.(`> Intentando vía proxy CORS...`)
