@@ -1,12 +1,10 @@
 /**
- * Pure TypeScript RIFF Animated WebP Muxer (RFC 9649 / Google WebP Container Spec).
- * Combines individual static WebP frames (from HTML5 canvas.toBlob('image/webp'))
- * into a spec-compliant 512x512 RGBA Animated WebP (VP8X + ANIM + ANMF) in <5ms,
- * eliminating the 32 MB FFmpeg.wasm download and Web Worker deadlocks.
+ * Pure TypeScript RIFF Animated WebP Muxer (RFC 9649 / Google WebP Container Spec)
+ * with embedded WhatsApp Sticker EXIF metadata chunk (TIFF tag 0x5741).
  */
 
 interface ExtractedFrameChunks {
-  bitstreamChunk: Uint8Array // Full 'ALPH' (if any) + 'VP8 ' or 'VP8L' chunk bytes (even-padded)
+  bitstreamChunk: Uint8Array
   hasAlpha: boolean
 }
 
@@ -43,6 +41,36 @@ function writeFourCC(buf: Uint8Array, offset: number, str: string) {
   }
 }
 
+/**
+ * Builds the official WhatsApp Sticker EXIF RIFF chunk (TIFF little-endian tag 0x5741 "AW").
+ */
+export function buildWhatsAppExifChunk(
+  packName = 'SHROUD Sticker Forge',
+  publisher = 'SHROUD'
+): Uint8Array {
+  const metaJson = JSON.stringify({
+    'sticker-pack-id': 'com.shroud.stickerforge',
+    'sticker-pack-name': packName,
+    'sticker-pack-publisher': publisher,
+    emojis: ['🔥', '💀'],
+  })
+  const jsonBytes = new TextEncoder().encode(metaJson)
+  const tiffHeader = new Uint8Array([
+    0x49, 0x49, 0x2a, 0x00, 0x08, 0x00, 0x00, 0x00, 0x01, 0x00, 0x41, 0x57, 0x07, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x16, 0x00, 0x00, 0x00,
+  ])
+  writeU32LE(tiffHeader, 14, jsonBytes.byteLength)
+
+  const payloadSize = tiffHeader.byteLength + jsonBytes.byteLength
+  const paddedSize = payloadSize + (payloadSize % 2)
+  const chunk = new Uint8Array(8 + paddedSize)
+  writeFourCC(chunk, 0, 'EXIF')
+  writeU32LE(chunk, 4, payloadSize)
+  chunk.set(tiffHeader, 8)
+  chunk.set(jsonBytes, 8 + tiffHeader.byteLength)
+  return chunk
+}
+
 export function extractWebpFrameSubchunks(staticWebp: Uint8Array): ExtractedFrameChunks {
   if (
     staticWebp.byteLength < 20 ||
@@ -74,7 +102,6 @@ export function extractWebpFrameSubchunks(staticWebp: Uint8Array): ExtractedFram
       alphChunk.set(staticWebp.subarray(offset, Math.min(staticWebp.byteLength, offset + chunkTotal)))
     } else if (tag === 'VP8 ' || tag === 'VP8L') {
       if (tag === 'VP8L') {
-        // VP8L header byte 4 bit 4 indicates alpha
         if (offset + 12 < staticWebp.byteLength && (staticWebp[offset + 12] & 0x10) !== 0) {
           hasAlpha = true
         }
@@ -121,7 +148,6 @@ export function muxAnimatedWebp(
 
   const anyAlpha = extracted.some((e) => e.hasAlpha)
 
-  // Build ANMF chunks
   const anmfChunks: Uint8Array[] = extracted.map((e) => {
     const payloadSize = 16 + e.bitstreamChunk.byteLength
     const paddedPayloadSize = payloadSize + (payloadSize % 2)
@@ -129,42 +155,37 @@ export function muxAnimatedWebp(
 
     writeFourCC(chunk, 0, 'ANMF')
     writeU32LE(chunk, 4, payloadSize)
-    // Frame X = 0, Frame Y = 0
     writeU24LE(chunk, 8, 0)
     writeU24LE(chunk, 11, 0)
-    // Width - 1, Height - 1
     writeU24LE(chunk, 14, width - 1)
     writeU24LE(chunk, 17, height - 1)
-    // Duration ms
     writeU24LE(chunk, 20, e.durationMs)
-    // Flags: bit 1 (0x02) = Do not blend, bit 0 (0x01) = Dispose to background (0x00000000)
+    // Flags: bit 1 (0x02) = Do not blend, bit 0 (0x01) = Dispose to background
     chunk[23] = 0x03
 
     chunk.set(e.bitstreamChunk, 24)
     return chunk
   })
 
-  // VP8X chunk: 8 + 10 = 18 bytes
-  // ANIM chunk: 8 + 6 = 14 bytes
+  const exifChunk = buildWhatsAppExifChunk()
   const anmfTotalBytes = anmfChunks.reduce((acc, c) => acc + c.byteLength, 0)
-  const riffPayloadSize = 4 + 18 + 14 + anmfTotalBytes // 'WEBP' (4) + VP8X (18) + ANIM (14) + ANMFs
+  const riffPayloadSize = 4 + 18 + 14 + anmfTotalBytes + exifChunk.byteLength
   const out = new Uint8Array(8 + riffPayloadSize)
 
   writeFourCC(out, 0, 'RIFF')
   writeU32LE(out, 4, riffPayloadSize)
   writeFourCC(out, 8, 'WEBP')
 
-  // VP8X
+  // VP8X (0x02 Animation | 0x08 EXIF | 0x10 Alpha)
   writeFourCC(out, 12, 'VP8X')
   writeU32LE(out, 16, 10)
-  out[20] = 0x02 | (anyAlpha ? 0x10 : 0x00) // Animation + Alpha
+  out[20] = 0x02 | 0x08 | (anyAlpha ? 0x10 : 0x00)
   writeU24LE(out, 24, width - 1)
   writeU24LE(out, 27, height - 1)
 
   // ANIM
   writeFourCC(out, 30, 'ANIM')
   writeU32LE(out, 34, 6)
-  // Background color BGRA = 0,0,0,0; Loop count = 0 (infinite)
   writeU32LE(out, 38, 0)
   out[42] = 0
   out[43] = 0
@@ -174,6 +195,7 @@ export function muxAnimatedWebp(
     out.set(c, pos)
     pos += c.byteLength
   }
+  out.set(exifChunk, pos)
 
   return out
 }

@@ -1,11 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Globe, ShieldCheck, Skull, Terminal } from 'lucide-react'
+import { Download, Globe, Share2, ShieldCheck, Skull, Smartphone, Terminal } from 'lucide-react'
 import { AdBannerRail } from './components/AdBannerRail'
 import { BloodBackdrop } from './components/backdrop/BloodBackdrop'
 import { CropStage } from './components/CropStage'
 import { ToolRack, type WizardStep } from './components/ToolRack'
 import { stickerEngine } from './engine/ffmpegClient'
 import { probeMediaFile } from './engine/mediaProbe'
+import {
+  receiveP2pStickerFromHost,
+  startP2pStickerHost,
+  type P2pHostSession,
+  type ReceivedP2pSticker,
+} from './engine/p2pTransfer'
 import {
   WHATSAPP_MAX_DURATION_SEC,
   WHATSAPP_SAFE_TARGET_BYTES,
@@ -65,6 +71,21 @@ export function App() {
   ])
   const [result, setResult] = useState<EncodeResult | null>(null)
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
+  const [p2pStatus, setP2pStatus] = useState<string | null>(null)
+  const p2pHostRef = useRef<P2pHostSession | null>(null)
+
+  // Mobile P2P receiver mode (?p2p=<peerId>)
+  const [incomingPeerId] = useState<string | null>(() => {
+    try {
+      return new URLSearchParams(window.location.search).get('p2p')?.trim() || null
+    } catch {
+      return null
+    }
+  })
+  const [mobileReceiveStatus, setMobileReceiveStatus] = useState<string>(
+    'Connecting to your PC via WebRTC P2P...'
+  )
+  const [receivedSticker, setReceivedSticker] = useState<ReceivedP2pSticker | null>(null)
 
   const logEndRef = useRef<HTMLDivElement>(null)
 
@@ -94,8 +115,39 @@ export function App() {
   useEffect(() => {
     return () => {
       if (result?.url) URL.revokeObjectURL(result.url)
+      p2pHostRef.current?.destroy()
     }
   }, [result])
+
+  // If opened on phone via P2P QR (?p2p=<peerId>), receive .wastickers directly from PC
+  useEffect(() => {
+    if (!incomingPeerId) return
+    let cancelled = false
+    receiveP2pStickerFromHost(incomingPeerId, (st) => {
+      if (!cancelled) setMobileReceiveStatus(st)
+    })
+      .then((item) => {
+        if (cancelled) return
+        setReceivedSticker(item)
+        // Auto-trigger download of .wastickers on the phone
+        const dlUrl = URL.createObjectURL(item.wastickersBlob)
+        const a = document.createElement('a')
+        a.href = dlUrl
+        a.download = item.filename
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+        setTimeout(() => URL.revokeObjectURL(dlUrl), 5000)
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setMobileReceiveStatus(`Error: ${err instanceof Error ? err.message : String(err)}`)
+        }
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [incomingPeerId])
 
   const loadFile = async (file: File) => {
     setUrlError(null)
@@ -210,25 +262,73 @@ export function App() {
   const handleDownloadWastickers = async () => {
     if (!result || !media) return
     const stem = media.name.replace(/\.[^.]+$/, '') || 'shroud-pack'
-    appendLog(`> Packing .wastickers archive (100% local)...`)
+    const filename = `${stem}.wastickers`
+    appendLog(`> Packing .wastickers archive (3 slots for 1-tap WhatsApp import)...`)
     try {
       const packBlob = await buildWastickersPack(result.blob, result.url, stem)
       const url = URL.createObjectURL(packBlob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `${stem}.wastickers`
+      a.download = filename
       document.body.appendChild(a)
       a.click()
       a.remove()
       setTimeout(() => URL.revokeObjectURL(url), 4000)
 
-      const qr = await generateAppQrDataUrl(window.location.href)
-      setQrDataUrl(qr)
-      appendLog(`> ✓ Exported ${stem}.wastickers (${(packBlob.size / 1024).toFixed(1)} KB).`)
+      appendLog(`> ✓ Exported ${filename} (${(packBlob.size / 1024).toFixed(1)} KB). Starting P2P QR host...`)
+      p2pHostRef.current?.destroy()
+      setP2pStatus('Initializing WebRTC P2P channel...')
+
+      const [wastickersBytes, webpBytes] = await Promise.all([
+        packBlob.arrayBuffer(),
+        result.blob.arrayBuffer(),
+      ])
+
+      try {
+        const session = await startP2pStickerHost(
+          { filename, wastickersBytes, webpBytes },
+          (st) => {
+            setP2pStatus(st)
+            appendLog(`> [P2P] ${st}`)
+          }
+        )
+        p2pHostRef.current = session
+        setQrDataUrl(session.qrDataUrl)
+      } catch {
+        const fallbackQr = await generateAppQrDataUrl(window.location.href)
+        setQrDataUrl(fallbackQr)
+        setP2pStatus('WebRTC signaling unavailable; transfer the downloaded .wastickers file via USB/Telegram.')
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
       appendLog(`! Error packing .wastickers: ${msg}`)
     }
+  }
+
+  const handleMobileShareWastickers = async () => {
+    if (!receivedSticker) return
+    const file = new File([receivedSticker.wastickersBlob], receivedSticker.filename, {
+      type: 'application/octet-stream',
+    })
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({
+          title: 'SHROUD WhatsApp Sticker Pack',
+          files: [file],
+        })
+        return
+      } catch {
+        // fall back to direct download
+      }
+    }
+    const dlUrl = URL.createObjectURL(receivedSticker.wastickersBlob)
+    const a = document.createElement('a')
+    a.href = dlUrl
+    a.download = receivedSticker.filename
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    setTimeout(() => URL.revokeObjectURL(dlUrl), 4000)
   }
 
   return (
@@ -300,49 +400,95 @@ export function App() {
         </button>
       </nav>
 
-      {/* Main studio workspace */}
-      <main className={`workspace-grid ${step === 1 && !media ? 'single-step' : ''}`}>
-        {(step !== 1 || media) && (
-          <CropStage
-            t={t}
-            media={media}
-            canvasBg={settings.canvasBg}
-            canvasScale={settings.canvasScale}
-            canvasX={settings.canvasX}
-            canvasY={settings.canvasY}
-            rotationDeg={settings.rotationDeg}
-            trimStart={settings.trimStart}
-            trimEnd={settings.trimEnd}
-            speed={settings.speed}
-            result={result}
-            viewMode={viewMode}
-            onViewModeChange={setViewMode}
-            onTransformChange={(patch) => handleSettingsChange(patch)}
-            onResetTransform={() =>
-              handleSettingsChange({ canvasScale: 1, canvasX: 0, canvasY: 0, rotationDeg: 0 })
-            }
-          />
-        )}
+      {/* Main studio workspace (or Mobile P2P Receiver View when opened via QR) */}
+      {incomingPeerId ? (
+        <main className="workspace-grid single-step">
+          <section className="panel p2p-receiver-card">
+            <div className="panel-header">
+              <div className="panel-title-group">
+                <Smartphone size={15} className="icon-crimson" />
+                <span className="panel-title">{t.p2pReceivingTitle}</span>
+              </div>
+            </div>
 
-        <ToolRack
-          t={t}
-          step={step}
-          media={media}
-          settings={settings}
-          urlLoading={urlLoading}
-          urlError={urlError}
-          encoding={encoding}
-          result={result}
-          qrDataUrl={qrDataUrl}
-          onStepChange={setStep}
-          onFileSelected={loadFile}
-          onUrlSubmit={handleUrlSubmit}
-          onSettingsChange={handleSettingsChange}
-          onForge={handleForge}
-          onDownload={handleDownload}
-          onDownloadWastickers={handleDownloadWastickers}
-        />
-      </main>
+            <div className="p2p-status-badge">{mobileReceiveStatus}</div>
+
+            {receivedSticker && (
+              <div className="result-preview-wrap">
+                <div className="checkerboard-box">
+                  <img
+                    src={receivedSticker.webpUrl}
+                    alt="Received WhatsApp Sticker"
+                    className="result-webp-img"
+                  />
+                </div>
+                <div className="p2p-mobile-actions">
+                  <button
+                    type="button"
+                    className="btn-crimson forge-main-btn"
+                    onClick={handleMobileShareWastickers}
+                  >
+                    <Share2 size={15} />
+                    {t.p2pShareStickerMaker}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-secondary forge-main-btn"
+                    onClick={handleMobileShareWastickers}
+                  >
+                    <Download size={15} />
+                    {t.p2pDownloadWastickers} ({receivedSticker.filename})
+                  </button>
+                </div>
+              </div>
+            )}
+          </section>
+        </main>
+      ) : (
+        <main className={`workspace-grid ${step === 1 && !media ? 'single-step' : ''}`}>
+          {(step !== 1 || media) && (
+            <CropStage
+              t={t}
+              media={media}
+              canvasBg={settings.canvasBg}
+              canvasScale={settings.canvasScale}
+              canvasX={settings.canvasX}
+              canvasY={settings.canvasY}
+              rotationDeg={settings.rotationDeg}
+              trimStart={settings.trimStart}
+              trimEnd={settings.trimEnd}
+              speed={settings.speed}
+              result={result}
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
+              onTransformChange={(patch) => handleSettingsChange(patch)}
+              onResetTransform={() =>
+                handleSettingsChange({ canvasScale: 1, canvasX: 0, canvasY: 0, rotationDeg: 0 })
+              }
+            />
+          )}
+
+          <ToolRack
+            t={t}
+            step={step}
+            media={media}
+            settings={settings}
+            urlLoading={urlLoading}
+            urlError={urlError}
+            encoding={encoding}
+            result={result}
+            qrDataUrl={qrDataUrl}
+            p2pStatus={p2pStatus}
+            onStepChange={setStep}
+            onFileSelected={loadFile}
+            onUrlSubmit={handleUrlSubmit}
+            onSettingsChange={handleSettingsChange}
+            onForge={handleForge}
+            onDownload={handleDownload}
+            onDownloadWastickers={handleDownloadWastickers}
+          />
+        </main>
+      )}
 
       {/* Bottom Terminal & Progress Bar */}
       <footer className="panel footer-terminal">

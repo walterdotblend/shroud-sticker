@@ -39,6 +39,7 @@ interface ToolRackProps {
   encoding: boolean
   result: EncodeResult | null
   qrDataUrl: string | null
+  p2pStatus: string | null
   onStepChange: (step: WizardStep) => void
   onFileSelected: (file: File) => void
   onUrlSubmit: (url: string) => void
@@ -60,6 +61,7 @@ export function ToolRack({
   encoding,
   result,
   qrDataUrl,
+  p2pStatus,
   onStepChange,
   onFileSelected,
   onUrlSubmit,
@@ -418,16 +420,19 @@ export function ToolRack({
 
         {qrDataUrl && (
           <div className="qr-card">
-            <img src={qrDataUrl} alt="QR Code" className="qr-image" />
+            <img src={qrDataUrl} alt="P2P QR Code" className="qr-image" />
             <div className="qr-info">
               <div className="qr-title">
                 <QrCode size={13} className="icon-crimson" />
                 <span>{t.qrTitle}</span>
               </div>
+              {p2pStatus && <div className="p2p-status-badge">{p2pStatus}</div>}
               <p className="qr-note">{t.qrLocalNote}</p>
             </div>
           </div>
         )}
+
+        <p className="pc-limitation-box">{t.pcLimitationNote}</p>
 
         <div className="import-guide">
           <div className="import-guide-title">

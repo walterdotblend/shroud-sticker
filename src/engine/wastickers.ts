@@ -26,6 +26,11 @@ async function createTrayPng(webpUrl: string): Promise<Blob> {
   })
 }
 
+/**
+ * Builds a WhatsApp-ready .wastickers ZIP pack.
+ * Includes 3 slots (1.webp, 2.webp, 3.webp) so WhatsApp's 3-sticker minimum per pack
+ * is automatically satisfied and Sticker Maker lets you tap "Add to WhatsApp" in 1 click.
+ */
 export async function buildWastickersPack(webpBlob: Blob, webpUrl: string, packTitle: string): Promise<Blob> {
   const zip = new JSZip()
   const cleanTitle = (packTitle || 'SHROUD Pack').slice(0, 40)
@@ -35,6 +40,8 @@ export async function buildWastickersPack(webpBlob: Blob, webpUrl: string, packT
   zip.file('author.txt', 'SHROUD Sticker Forge')
   zip.file('tray.png', trayPng)
   zip.file('1.webp', webpBlob)
+  zip.file('2.webp', webpBlob)
+  zip.file('3.webp', webpBlob)
 
   return zip.generateAsync({ type: 'blob', compression: 'DEFLATE' })
 }
