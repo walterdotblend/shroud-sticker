@@ -86,6 +86,10 @@ export interface Translations {
   importDesktop: string
   cursedLabel: string
   dynamicBudgetHint: string
+  downloadWebpPc: string
+  downloadWastickersMobile: string
+  qrTitle: string
+  qrLocalNote: string
 }
 
 const en: Translations = {
@@ -164,6 +168,10 @@ const en: Translations = {
   importDesktop: 'WhatsApp Web / PC: Drag the .webp directly into a chat or use Sticker Maker on mobile to save as a sticker.',
   cursedLabel: 'Cursed / Ugly',
   dynamicBudgetHint: 'Max FPS capped to source; lower FPS to unlock higher quality.',
+  downloadWebpPc: '.webp (PC)',
+  downloadWastickersMobile: '.wastickers (Android & iOS)',
+  qrTitle: 'LOCAL-ONLY QR · OPEN ON MOBILE',
+  qrLocalNote: '100% Local: Your .wastickers file never left your PC. Scan to open SHROUD on your phone, or send the downloaded .wastickers file to your mobile (USB / Telegram / AirDrop) and open it with Sticker Maker.',
 }
 
 const es: Translations = {
@@ -242,6 +250,10 @@ const es: Translations = {
   importDesktop: 'WhatsApp Web / PC: En algunos clientes puedes enviar el .webp o importarlo desde tu móvil con Sticker Maker para guardarlo en favoritos.',
   cursedLabel: 'Cursed / Feo',
   dynamicBudgetHint: 'FPS máx según origen; baja los FPS para desbloquear mayor calidad.',
+  downloadWebpPc: '.webp (PC)',
+  downloadWastickersMobile: '.wastickers (Android & iOS)',
+  qrTitle: 'QR SOLO LOCAL · ABRIR EN CELULAR',
+  qrLocalNote: '100% Local: Tu archivo .wastickers nunca salió de tu PC. Escanea para abrir SHROUD en tu celular, o pásate el archivo .wastickers descargado (USB / Telegram / AirDrop) y ábrelo con Sticker Maker.',
 }
 
 const pt: Translations = {

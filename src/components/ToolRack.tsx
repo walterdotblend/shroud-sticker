@@ -6,8 +6,11 @@ import {
   Gauge,
   HelpCircle,
   Link2,
+  Monitor,
   Move,
+  QrCode,
   RotateCcw,
+  Smartphone,
   Upload,
 } from 'lucide-react'
 import {
@@ -35,12 +38,14 @@ interface ToolRackProps {
   urlError: string | null
   encoding: boolean
   result: EncodeResult | null
+  qrDataUrl: string | null
   onStepChange: (step: WizardStep) => void
   onFileSelected: (file: File) => void
   onUrlSubmit: (url: string) => void
   onSettingsChange: (patch: Partial<StickerSettings>) => void
   onForge: () => void
   onDownload: () => void
+  onDownloadWastickers: () => void
 }
 
 const SPEED_PRESETS = [0.5, 1, 1.5, 2, 3, 4]
@@ -54,12 +59,14 @@ export function ToolRack({
   urlError,
   encoding,
   result,
+  qrDataUrl,
   onStepChange,
   onFileSelected,
   onUrlSubmit,
   onSettingsChange,
   onForge,
   onDownload,
+  onDownloadWastickers,
 }: ToolRackProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [urlInput, setUrlInput] = useState('')
@@ -382,17 +389,45 @@ export function ToolRack({
           />
         </div>
 
-        <div className="action-buttons">
-          <button type="button" className="btn-crimson" disabled={!media || encoding} onClick={onForge}>
-            <Flame size={15} />
-            {encoding ? t.forgingButton : t.forgeButton}
+        <button type="button" className="btn-crimson forge-main-btn" disabled={!media || encoding} onClick={onForge}>
+          <Flame size={16} />
+          {encoding ? t.forgingButton : t.forgeButton}
+        </button>
+
+        <div className="export-buttons-grid">
+          <button type="button" className="btn-export" disabled={!result || encoding} onClick={onDownload}>
+            <div className="export-icons">
+              <Monitor size={15} />
+            </div>
+            <span className="export-label">{t.downloadWebpPc}</span>
           </button>
 
-          <button type="button" className="btn-bone" disabled={!result || encoding} onClick={onDownload}>
-            <Download size={15} />
-            {t.downloadButton}
+          <button
+            type="button"
+            className="btn-export btn-export-mobile"
+            disabled={!result || encoding}
+            onClick={onDownloadWastickers}
+          >
+            <div className="export-icons">
+              <Smartphone size={14} />
+              <span className="os-tag">Android · iOS</span>
+            </div>
+            <span className="export-label">{t.downloadWastickersMobile}</span>
           </button>
         </div>
+
+        {qrDataUrl && (
+          <div className="qr-card">
+            <img src={qrDataUrl} alt="QR Code" className="qr-image" />
+            <div className="qr-info">
+              <div className="qr-title">
+                <QrCode size={13} className="icon-crimson" />
+                <span>{t.qrTitle}</span>
+              </div>
+              <p className="qr-note">{t.qrLocalNote}</p>
+            </div>
+          </div>
+        )}
 
         <div className="import-guide">
           <div className="import-guide-title">

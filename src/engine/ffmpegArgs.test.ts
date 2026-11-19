@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildStickerArgs,
-  buildStickerFilterComplex,
+  buildStickerFilterGraph,
   computeBaseFitSize,
   computeEffectiveDuration,
   parseFfmpegDuration,
@@ -47,8 +47,8 @@ describe('ffmpegArgs', () => {
     expect(computeEffectiveDuration(0, 3, 0.5)).toBeCloseTo(6, 2)
   })
 
-  it('builds transparent 512x512 filter_complex with scale, rotation, and speed', () => {
-    const fc = buildStickerFilterComplex(
+  it('builds transparent 512x512 filter_graph with scale, rotation, and speed', () => {
+    const vf = buildStickerFilterGraph(
       {
         ...baseSettings,
         speed: 2,
@@ -62,13 +62,13 @@ describe('ffmpegArgs', () => {
       480
     )
     expect(computeBaseFitSize(640, 480, 512)).toEqual({ width: 512, height: 384 })
-    expect(fc).toContain('color=c=black@0.0:s=512x512')
-    expect(fc).toContain('setpts=0.5000*PTS')
-    expect(fc).toContain('reverse')
-    expect(fc).toContain('fps=15')
-    expect(fc).toContain('format=rgba')
-    expect(fc).toContain('rotate=')
-    expect(fc).toContain("overlay=x='(W-w)/2+20':y='(H-h)/2-15':shortest=1")
+    expect(vf).toContain('setpts=0.5000*PTS')
+    expect(vf).toContain('reverse')
+    expect(vf).toContain('fps=15')
+    expect(vf).toContain('format=rgba')
+    expect(vf).toContain('rotate=')
+    expect(vf).toContain('pad=w=')
+    expect(vf).toContain('crop=512:512:(iw-512)/2:(ih-512)/2')
   })
 
   it('builds libwebp args with infinite loop and no audio', () => {

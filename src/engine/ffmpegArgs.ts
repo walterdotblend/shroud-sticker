@@ -46,7 +46,7 @@ export function computeBaseFitSize(sourceWidth: number, sourceHeight: number, ca
   }
 }
 
-export function buildStickerFilterComplex(
+export function buildStickerFilterGraph(
   settings: StickerSettings,
   sourceWidth: number,
   sourceHeight: number,
@@ -54,15 +54,15 @@ export function buildStickerFilterComplex(
 ): string {
   const size = settings.targetSize || 512
   const fps = Math.max(5, Math.min(30, Math.round(overrideFps ?? settings.fps)))
-  const fgFilters: string[] = []
+  const filters: string[] = []
 
   if (Math.abs(settings.speed - 1) > 0.01) {
     const ptsFactor = (1 / Math.max(0.1, Math.min(8, settings.speed))).toFixed(4)
-    fgFilters.push(`setpts=${ptsFactor}*PTS`)
+    filters.push(`setpts=${ptsFactor}*PTS`)
   }
 
   if (settings.reverse) {
-    fgFilters.push('reverse')
+    filters.push('reverse')
   }
 
   let effW = Math.max(2, sourceWidth)
@@ -74,11 +74,11 @@ export function buildStickerFilterComplex(
     const ch = Math.max(2, Math.min(sourceHeight - cy, Math.round(settings.crop.height)))
     effW = cw % 2 === 0 ? cw : Math.max(2, cw - 1)
     effH = ch % 2 === 0 ? ch : Math.max(2, ch - 1)
-    fgFilters.push(`crop=${effW}:${effH}:${cx}:${cy}`)
+    filters.push(`crop=${effW}:${effH}:${cx}:${cy}`)
   }
 
-  fgFilters.push(`fps=${fps}`)
-  fgFilters.push('format=rgba')
+  filters.push(`fps=${fps}`)
+  filters.push('format=rgba')
 
   const base = computeBaseFitSize(effW, effH, size)
   const scale = Math.max(0.15, Math.min(3.0, settings.canvasScale || 1))
@@ -89,36 +89,42 @@ export function buildStickerFilterComplex(
 
   const cursed = Math.max(0, Math.min(100, settings.cursedLevel || 0))
   if (cursed >= 35) {
-    // Crunchy pixel-fry downscale + nearest-neighbor upscale for comedic ugly effect
     const factor = Math.max(0.14, 1 - (cursed / 100) * 0.82)
     let lowW = Math.max(24, Math.round(drawW * factor))
     let lowH = Math.max(24, Math.round(drawH * factor))
     if (lowW % 2 !== 0) lowW += 1
     if (lowH % 2 !== 0) lowH += 1
-    fgFilters.push(`scale=${lowW}:${lowH}:flags=neighbor`)
-    fgFilters.push(`scale=${drawW}:${drawH}:flags=neighbor`)
+    filters.push(`scale=${lowW}:${lowH}:flags=neighbor`)
+    filters.push(`scale=${drawW}:${drawH}:flags=neighbor`)
   } else {
-    fgFilters.push(`scale=${drawW}:${drawH}:flags=lanczos`)
+    filters.push(`scale=${drawW}:${drawH}:flags=lanczos`)
   }
 
   if (cursed >= 15) {
     const contrast = (1 + (cursed / 100) * 0.75).toFixed(2)
     const sat = (1 + (cursed / 100) * 1.1).toFixed(2)
-    fgFilters.push(`eq=contrast=${contrast}:saturation=${sat}`)
+    filters.push(`eq=contrast=${contrast}:saturation=${sat}`)
   }
 
   if (Math.abs(settings.rotationDeg) > 0.1) {
     const rad = ((settings.rotationDeg * Math.PI) / 180).toFixed(5)
-    fgFilters.push(`rotate=${rad}:c=0x00000000:ow='rotw(${rad})':oh='roth(${rad})'`)
+    filters.push(`rotate=${rad}:c=0x00000000:ow='rotw(${rad})':oh='roth(${rad})'`)
   }
 
-  const bgColor = settings.canvasBg === 'obsidian' ? '0x080709ff' : 'black@0.0'
+  const bgColor = settings.canvasBg === 'obsidian' ? '0x080709ff' : '0x00000000'
   const ox = Math.round(settings.canvasX || 0)
   const oy = Math.round(settings.canvasY || 0)
-  const xExpr = ox >= 0 ? `(W-w)/2+${ox}` : `(W-w)/2${ox}`
-  const yExpr = oy >= 0 ? `(H-h)/2+${oy}` : `(H-h)/2${oy}`
+  const absOx = Math.abs(ox)
+  const absOy = Math.abs(oy)
+  const xExpr = ox >= 0 ? `(ow-iw)/2+${ox}` : `(ow-iw)/2${ox}`
+  const yExpr = oy >= 0 ? `(oh-ih)/2+${oy}` : `(oh-ih)/2${oy}`
 
-  return `color=c=${bgColor}:s=${size}x${size}:r=${fps},format=rgba[bg];[0:v]${fgFilters.join(',')}[fg];[bg][fg]overlay=x='${xExpr}':y='${yExpr}':shortest=1:format=auto`
+  filters.push(
+    `pad=w='max(${size},iw+${absOx * 2}+4)':h='max(${size},ih+${absOy * 2}+4)':x='${xExpr}':y='${yExpr}':color=${bgColor}`
+  )
+  filters.push(`crop=${size}:${size}:(iw-${size})/2:(ih-${size})/2`)
+
+  return filters.join(',')
 }
 
 export function buildStickerArgs(
@@ -140,7 +146,7 @@ export function buildStickerArgs(
   args.push('-i', inputName)
   args.push('-t', trimDuration.toFixed(3))
 
-  const fc = buildStickerFilterComplex(settings, sourceWidth, sourceHeight, overrideFps)
+  const vf = buildStickerFilterGraph(settings, sourceWidth, sourceHeight, overrideFps)
   const cursed = Math.max(0, Math.min(100, settings.cursedLevel || 0))
   const rawQuality = overrideQuality ?? settings.quality
   const cursedQuality = cursed > 0 ? Math.max(3, Math.round(rawQuality * (1 - (cursed / 100) * 0.88))) : rawQuality
@@ -148,8 +154,8 @@ export function buildStickerArgs(
   const compression = Math.max(0, Math.min(6, Math.round(overrideCompression ?? settings.compressionLevel)))
 
   args.push(
-    '-filter_complex',
-    fc,
+    '-vf',
+    vf,
     '-an',
     '-vcodec',
     'libwebp',

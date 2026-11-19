@@ -143,7 +143,7 @@ async function fetchWithCorsFallback(url: string, onLog?: (msg: string) => void)
   for (const buildRelay of getRelayBuilders()) {
     try {
       const relayUrl = buildRelay(url)
-      onLog?.(`> Intentando vía proxy CORS...`)
+      onLog?.(`> Trying via CORS relay...`)
       const res = await fetch(relayUrl)
       if (res.ok) return res
     } catch {
@@ -158,7 +158,7 @@ async function tryTwitterExtract(url: string, onLog?: (msg: string) => void): Pr
   const m = /^https?:\/\/(?:www\.|mobile\.)?(?:twitter\.com|x\.com)\/([^/]+)\/status\/(\d+)/i.exec(url)
   if (!m) return null
   try {
-    onLog?.(`> Consultando extractor Twitter/X (vxtwitter)...`)
+    onLog?.(`> Querying Twitter/X extractor (vxtwitter)...`)
     const res = await fetch(`https://api.vxtwitter.com/${m[1]}/status/${m[2]}`)
     if (!res.ok) return null
     const data = (await res.json()) as {
@@ -177,7 +177,7 @@ async function tryTwitterExtract(url: string, onLog?: (msg: string) => void): Pr
 async function tryTikTokExtract(url: string, onLog?: (msg: string) => void): Promise<string | null> {
   if (!/tiktok\.com/i.test(url)) return null
   try {
-    onLog?.(`> Consultando extractor TikTok...`)
+    onLog?.(`> Querying TikTok extractor...`)
     const res = await fetch(`https://www.tikwm.com/api/?url=${encodeURIComponent(url)}`)
     if (!res.ok) return null
     const data = (await res.json()) as { data?: { play?: string; wmplay?: string } }
@@ -189,7 +189,7 @@ async function tryTikTokExtract(url: string, onLog?: (msg: string) => void): Pro
 
 async function tryCobaltExtract(url: string, onLog?: (msg: string) => void): Promise<string | null> {
   try {
-    onLog?.(`> Consultando extractor de video integrado (Cobalt)...`)
+    onLog?.(`> Querying video extractor (Cobalt)...`)
     const res = await fetch('https://api.cobalt.tools/', {
       method: 'POST',
       headers: {
@@ -229,17 +229,17 @@ export async function downloadMediaFromUrl(
   const twitterUrl = await tryTwitterExtract(originalUrl, onLog)
   if (twitterUrl) {
     targetUrl = twitterUrl
-    onLog?.(`> Video de Twitter/X extraído.`)
+    onLog?.(`> Twitter/X video extracted.`)
   } else {
     const tiktokUrl = await tryTikTokExtract(originalUrl, onLog)
     if (tiktokUrl) {
       targetUrl = tiktokUrl
-      onLog?.(`> Video de TikTok extraído.`)
+      onLog?.(`> TikTok video extracted.`)
     } else if (isSocialVideoPage(originalUrl)) {
       const extracted = await tryCobaltExtract(originalUrl, onLog)
       if (extracted) {
         targetUrl = extracted
-        onLog?.(`> Stream extraído correctamente.`)
+        onLog?.(`> Stream extracted successfully.`)
       }
     }
   }
@@ -255,13 +255,13 @@ export async function downloadMediaFromUrl(
 
   // If HTML page, extract embedded video/GIF URL and fetch that instead
   if (contentType.includes('text/html')) {
-    onLog?.(`> Página HTML detectada, buscando video/GIF embebido...`)
+    onLog?.(`> HTML page detected, scanning for embedded video/GIF...`)
     const html = await response.text()
     const embeddedUrl = extractMediaUrlFromHtml(html, targetUrl)
     if (!embeddedUrl) {
       throw new Error(t.errHtmlNoMedia)
     }
-    onLog?.(`> Medio encontrado: ${embeddedUrl}`)
+    onLog?.(`> Media found: ${embeddedUrl}`)
     try {
       response = await fetchWithCorsFallback(embeddedUrl, onLog)
       targetUrl = embeddedUrl

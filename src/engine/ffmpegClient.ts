@@ -41,18 +41,18 @@ class StickerFfmpegEngine {
       if (canMultiThread) {
         for (const baseUrl of MULTI_THREAD_SOURCES) {
           try {
-            const label = baseUrl.startsWith('http') ? 'CDN multi-hilo' : 'local multi-hilo'
-            onLog?.(`> Inicializando FFmpeg.wasm (${label})...`)
+            const label = baseUrl.startsWith('http') ? 'CDN multi-thread' : 'local multi-thread'
+            onLog?.(`> Initializing FFmpeg.wasm (${label})...`)
             const coreURL = await toBlobURL(`${baseUrl}/ffmpeg-core.js`, 'text/javascript')
             const wasmURL = await toBlobURL(`${baseUrl}/ffmpeg-core.wasm`, 'application/wasm')
             const workerURL = await toBlobURL(`${baseUrl}/ffmpeg-core.worker.js`, 'text/javascript')
             await ff.load({ coreURL, wasmURL, workerURL })
             this.ffmpeg = ff
-            onLog?.('> Núcleo FFmpeg.wasm multi-hilo listo (máxima velocidad en tu CPU).')
+            onLog?.('> FFmpeg.wasm multi-thread core ready (maximum CPU speed).')
             return ff
           } catch (err) {
             lastError = err
-            onLog?.(`! Multi-hilo no disponible en ${baseUrl}, probando respaldo...`)
+            onLog?.(`! Multi-thread unavailable at ${baseUrl}, trying fallback...`)
           }
         }
       }
@@ -64,21 +64,21 @@ class StickerFfmpegEngine {
               ? 'jsDelivr'
               : 'unpkg'
             : 'local'
-          onLog?.(`> Inicializando núcleo FFmpeg.wasm (${label})...`)
+          onLog?.(`> Initializing FFmpeg.wasm core (${label})...`)
           const coreURL = await toBlobURL(`${baseUrl}/ffmpeg-core.js`, 'text/javascript')
           const wasmURL = await toBlobURL(`${baseUrl}/ffmpeg-core.wasm`, 'application/wasm')
           await ff.load({ coreURL, wasmURL })
           this.ffmpeg = ff
-          onLog?.('> Núcleo FFmpeg.wasm listo (100% local en tu navegador).')
+          onLog?.('> FFmpeg.wasm core ready (100% local in browser).')
           return ff
         } catch (err) {
           lastError = err
-          onLog?.(`! Falló mirror ${baseUrl}, intentando respaldo...`)
+          onLog?.(`! Mirror ${baseUrl} failed, trying backup...`)
         }
       }
 
       this.loadPromise = null
-      throw new Error(`No se pudo cargar FFmpeg.wasm: ${String(lastError)}`)
+      throw new Error(`Failed to load FFmpeg.wasm: ${String(lastError)}`)
     })()
 
     return this.loadPromise
@@ -95,18 +95,38 @@ class StickerFfmpegEngine {
     const outputName = 'sticker.webp'
 
     const effectiveDuration = computeEffectiveDuration(settings.trimStart, settings.trimEnd, settings.speed)
+    const expectedFrames = Math.max(1, Math.round(effectiveDuration * settings.fps))
 
     let currentPass = 1
     let totalPlannedPasses = 1
 
+    const progressListener = ({ progress }: { progress: number }) => {
+      if (!Number.isFinite(progress) || progress < 0) return
+      const clamped = Math.min(1, progress)
+      const overall = (currentPass - 1 + clamped) / totalPlannedPasses
+      callbacks.onProgress(
+        Math.max(0.06, Math.min(0.98, overall)),
+        `[Pass ${currentPass}/${totalPlannedPasses}] Forging WebP... ${Math.round(clamped * 100)}%`
+      )
+    }
+
     const logListener = ({ message }: { message: string }) => {
       const t = parseFfmpegTime(message)
+      const frameMatch = /frame=\s*(\d+)/.exec(message)
       if (t !== null && effectiveDuration > 0) {
         const passRatio = Math.min(1, t / effectiveDuration)
         const overall = (currentPass - 1 + passRatio) / totalPlannedPasses
         callbacks.onProgress(
-          Math.min(0.98, overall),
-          `[Pasada ${currentPass}/${totalPlannedPasses}] Codificando WebP... ${Math.round(passRatio * 100)}%`
+          Math.max(0.06, Math.min(0.98, overall)),
+          `[Pass ${currentPass}/${totalPlannedPasses}] Forging WebP... ${Math.round(passRatio * 100)}%`
+        )
+      } else if (frameMatch) {
+        const frames = Number(frameMatch[1])
+        const passRatio = Math.min(0.96, frames / expectedFrames)
+        const overall = (currentPass - 1 + passRatio) / totalPlannedPasses
+        callbacks.onProgress(
+          Math.max(0.06, Math.min(0.98, overall)),
+          `[Pass ${currentPass}/${totalPlannedPasses}] Frame ${frames}/${expectedFrames}...`
         )
       }
       if (message.includes('frame=') || message.includes('Output #0') || message.includes('Error')) {
@@ -114,10 +134,11 @@ class StickerFfmpegEngine {
       }
     }
 
+    ff.on('progress', progressListener)
     ff.on('log', logListener)
 
     try {
-      callbacks.onProgress(0.03, 'Cargando archivo en memoria WASM...')
+      callbacks.onProgress(0.04, 'Loading file into WASM memory...')
       await ff.writeFile(inputName, await fetchFile(media.file))
 
       const steps = settings.autoCompressWhatsApp
@@ -133,11 +154,11 @@ class StickerFfmpegEngine {
         currentPass = i + 1
         const step = steps[i]
         callbacks.onLog(
-          `> Pasada ${currentPass}: fps=${step.fps}, q=${step.quality}, comp=${step.compressionLevel}`
+          `> Pass ${currentPass}: fps=${step.fps}, q=${step.quality}, comp=${step.compressionLevel}`
         )
         callbacks.onProgress(
-          (i / steps.length) * 0.92 + 0.05,
-          `Forjando sticker [Pasada ${currentPass}: ${step.fps}fps · q${step.quality}]...`
+          (i / steps.length) * 0.92 + 0.06,
+          `Forging sticker [Pass ${currentPass}: ${step.fps}fps · q${step.quality}]...`
         )
 
         const args = buildStickerArgs(
@@ -153,7 +174,7 @@ class StickerFfmpegEngine {
 
         const exitCode = await ff.exec(args)
         if (exitCode !== 0) {
-          throw new Error(`FFmpeg terminó con código ${exitCode}.`)
+          throw new Error(`FFmpeg exited with code ${exitCode}.`)
         }
 
         const data = (await ff.readFile(outputName)) as Uint8Array
@@ -164,7 +185,7 @@ class StickerFfmpegEngine {
           quality: step.quality,
           sizeBytes: data.byteLength,
         })
-        callbacks.onLog(`  ↳ Resultado: ${sizeKB} KB`)
+        callbacks.onLog(`  -> Output: ${sizeKB} KB`)
 
         bestBytes = data
         bestStep = step
@@ -175,7 +196,7 @@ class StickerFfmpegEngine {
       }
 
       if (!bestBytes) {
-        throw new Error('No se generó ningún archivo WebP.')
+        throw new Error('No WebP output was generated.')
       }
 
       const copy = new Uint8Array(bestBytes.byteLength)
@@ -183,7 +204,7 @@ class StickerFfmpegEngine {
       const blob = new Blob([copy.buffer], { type: 'image/webp' })
       const url = URL.createObjectURL(blob)
 
-      callbacks.onProgress(1, 'Sticker forjado.')
+      callbacks.onProgress(1, 'Sticker forged.')
 
       return {
         blob,
@@ -198,6 +219,7 @@ class StickerFfmpegEngine {
         whatsappValid: blob.size <= WHATSAPP_MAX_BYTES && effectiveDuration <= 10.05,
       }
     } finally {
+      ff.off('progress', progressListener)
       ff.off('log', logListener)
       try {
         await ff.deleteFile(inputName)

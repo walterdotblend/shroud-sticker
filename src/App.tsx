@@ -14,6 +14,7 @@ import {
   type StickerSettings,
 } from './engine/types'
 import { downloadMediaFromUrl } from './engine/urlLoader'
+import { buildWastickersPack, generateAppQrDataUrl } from './engine/wastickers'
 import {
   detectInitialLang,
   getTranslations,
@@ -62,6 +63,7 @@ export function App() {
     '> Engine: FFmpeg.wasm (100% client-side, zero uploads).',
   ])
   const [result, setResult] = useState<EncodeResult | null>(null)
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
 
   const logEndRef = useRef<HTMLDivElement>(null)
 
@@ -186,6 +188,31 @@ export function App() {
     document.body.appendChild(a)
     a.click()
     a.remove()
+    appendLog(`> Exported .webp: ${stem}-whatsapp.webp`)
+  }
+
+  const handleDownloadWastickers = async () => {
+    if (!result || !media) return
+    const stem = media.name.replace(/\.[^.]+$/, '') || 'shroud-pack'
+    appendLog(`> Packing .wastickers archive (100% local)...`)
+    try {
+      const packBlob = await buildWastickersPack(result.blob, result.url, stem)
+      const url = URL.createObjectURL(packBlob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${stem}.wastickers`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      setTimeout(() => URL.revokeObjectURL(url), 4000)
+
+      const qr = await generateAppQrDataUrl(window.location.href)
+      setQrDataUrl(qr)
+      appendLog(`> ✓ Exported ${stem}.wastickers (${(packBlob.size / 1024).toFixed(1)} KB).`)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      appendLog(`! Error packing .wastickers: ${msg}`)
+    }
   }
 
   return (
@@ -288,12 +315,14 @@ export function App() {
           urlError={urlError}
           encoding={encoding}
           result={result}
+          qrDataUrl={qrDataUrl}
           onStepChange={setStep}
           onFileSelected={loadFile}
           onUrlSubmit={handleUrlSubmit}
           onSettingsChange={handleSettingsChange}
           onForge={handleForge}
           onDownload={handleDownload}
+          onDownloadWastickers={handleDownloadWastickers}
         />
       </main>
 
@@ -321,7 +350,19 @@ export function App() {
               <span>{Math.round(progress * 100)}%</span>
             </div>
             <div className="progress-track">
-              <div className="progress-fill" style={{ width: `${Math.round(progress * 100)}%` }} />
+              <div
+                className={`progress-fill ${encoding ? 'forging' : ''}`}
+                style={{ width: `${Math.round(progress * 100)}%` }}
+              >
+                {encoding && (
+                  <span className="forge-sparks" aria-hidden="true">
+                    <i className="spark s1" />
+                    <i className="spark s2" />
+                    <i className="spark s3" />
+                    <i className="spark s4" />
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </div>
