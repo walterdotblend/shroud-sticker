@@ -84,7 +84,7 @@ describe('ffmpegArgs', () => {
 
   it('plans progressive auto-compress steps', () => {
     const steps = planAutoCompressSteps(15, 75)
-    expect(steps[0]).toEqual({ fps: 15, quality: 75, compressionLevel: 4 })
+    expect(steps[0]).toEqual({ fps: 15, quality: 75, compressionLevel: 3 })
     expect(steps[steps.length - 1].fps).toBeLessThan(15)
     expect(steps[steps.length - 1].quality).toBeLessThan(75)
   })
