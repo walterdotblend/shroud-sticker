@@ -192,15 +192,23 @@ export function planAutoCompressSteps(initialFps: number, initialQuality: number
 
   const steps: CompressStep[] = [{ fps: startFps, quality: startQ, compressionLevel: 1 }]
 
-  const qualityLadder = [58, 42, 28, 16].filter((q) => q < startQ)
+  // Exhaust quality reductions at the user's chosen FPS first so FPS is preserved whenever possible
+  const qualityLadder = [60, 44, 30, 18, 10, 5].filter((q) => q < startQ)
   for (const q of qualityLadder) {
     steps.push({ fps: startFps, quality: q, compressionLevel: 2 })
   }
 
-  const fpsLadder = [12, 10, 8].filter((f) => f < startFps)
+  // Only reduce FPS gradually as a last resort if still over 500 KB
+  const fpsLadder = [
+    Math.round(startFps * 0.85),
+    Math.round(startFps * 0.7),
+    10,
+    8,
+  ].filter((f, idx, arr) => f >= 8 && f < startFps && arr.indexOf(f) === idx)
+
   for (const f of fpsLadder) {
-    steps.push({ fps: f, quality: 26, compressionLevel: 2 })
-    steps.push({ fps: f, quality: 15, compressionLevel: 3 })
+    steps.push({ fps: f, quality: 22, compressionLevel: 2 })
+    steps.push({ fps: f, quality: 8, compressionLevel: 3 })
   }
 
   return steps

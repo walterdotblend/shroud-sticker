@@ -172,8 +172,18 @@ export async function applyAiBgRemovalToCanvas(
   const normBytes = new Uint8ClampedArray(totalOut)
   for (let i = 0; i < totalOut; i++) {
     const norm = (rawFloats[i] - minVal) / range
-    // Gentle S-curve contrast around 0.45 for cleaner sticker edges
-    const clean = norm <= 0.15 ? 0 : norm >= 0.85 ? 255 : Math.round(((norm - 0.15) / 0.7) * 255)
+    // Crisp sticker cutout: snap background (<=0.38) to 0 and foreground (>=0.62) to 255
+    // so lossless WebP ALPH chunks compress 3-5x smaller and preserve the user's FPS.
+    let clean: number
+    if (norm <= 0.38) {
+      clean = 0
+    } else if (norm >= 0.62) {
+      clean = 255
+    } else {
+      const t = (norm - 0.38) / 0.24
+      // Quantize transition edge to 4 levels for high LZ77 compressibility
+      clean = Math.round(t * 3) * 85
+    }
     normBytes[i] = clean
   }
 
@@ -206,7 +216,8 @@ export async function applyAiBgRemovalToCanvas(
   for (let y = 0; y < bounds.h; y++) {
     for (let x = 0; x < bounds.w; x++) {
       const fullIdx = ((bounds.y + y) * canvas.width + (bounds.x + x)) * 4 + 3
-      const maskAlpha = resizedMaskData[(y * bounds.w + x) * 4]
+      const rawA = resizedMaskData[(y * bounds.w + x) * 4]
+      const maskAlpha = rawA <= 45 ? 0 : rawA >= 210 ? 255 : Math.round(rawA / 85) * 85
       rgba[fullIdx] = Math.round((rgba[fullIdx] * maskAlpha) / 255)
     }
   }
