@@ -3,6 +3,7 @@ import { Download, Globe, Share2, ShieldCheck, Skull, Smartphone, Terminal } fro
 import { AdBannerRail } from './components/AdBannerRail'
 import { BloodBackdrop } from './components/backdrop/BloodBackdrop'
 import { CropStage } from './components/CropStage'
+import { PackSidebar } from './components/PackSidebar'
 import { ToolRack, type WizardStep } from './components/ToolRack'
 import { stickerEngine } from './engine/ffmpegClient'
 import { probeMediaFile } from './engine/mediaProbe'
@@ -21,7 +22,12 @@ import {
   type StickerSettings,
 } from './engine/types'
 import { downloadMediaFromUrl } from './engine/urlLoader'
-import { buildWastickersPack, generateAppQrDataUrl } from './engine/wastickers'
+import {
+  buildWastickersPack,
+  generateAppQrDataUrl,
+  validateWhatsAppWebp,
+  type PackStickerItem,
+} from './engine/wastickers'
 import {
   detectInitialLang,
   getTranslations,
@@ -72,6 +78,10 @@ export function App() {
     '> Engine: FFmpeg.wasm (100% client-side, zero uploads).',
   ])
   const [result, setResult] = useState<EncodeResult | null>(null)
+  const [stickerName, setStickerName] = useState<string>('sticker')
+  const [packName, setPackName] = useState<string>('SHROUD Pack')
+  const [packItems, setPackItems] = useState<PackStickerItem[]>([])
+  const [packError, setPackError] = useState<string | null>(null)
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
   const [p2pStatus, setP2pStatus] = useState<string | null>(null)
   const p2pHostRef = useRef<P2pHostSession | null>(null)
@@ -156,6 +166,7 @@ export function App() {
     try {
       const info = await probeMediaFile(file)
       setMedia(info)
+      setStickerName(info.name.replace(/\.[^.]+$/, '') || 'sticker')
       setResult(null)
       setViewMode('source')
       setSettings((prev) => ({
@@ -249,19 +260,30 @@ export function App() {
     }
   }
 
-  const startQrP2pForResult = async (packBlob?: Blob) => {
-    if (!result || !media) return
-    const stem = media.name.replace(/\.[^.]+$/, '') || 'shroud-pack'
-    const filename = `${stem}.wastickers`
-    const finalPack = packBlob ?? (await buildWastickersPack(result.blob, result.url, stem))
+  const startQrP2pForResult = async (packBlob?: Blob, customFilename?: string) => {
+    if (!packBlob && (!result || !media)) return
+    const stem = (packName || media?.name.replace(/\.[^.]+$/, '') || 'shroud-pack').trim()
+    const filename = customFilename || `${stem}.wastickers`
+    const finalPack =
+      packBlob ??
+      (await buildWastickersPack(
+        [
+          {
+            id: 'single',
+            name: stickerName || 'sticker',
+            blob: result!.blob,
+            url: result!.url,
+            sizeBytes: result!.sizeBytes,
+          },
+        ],
+        stem
+      ))
 
     p2pHostRef.current?.destroy()
     setP2pStatus('Initializing WebRTC P2P channel...')
 
-    const [wastickersBytes, webpBytes] = await Promise.all([
-      finalPack.arrayBuffer(),
-      result.blob.arrayBuffer(),
-    ])
+    const wastickersBytes = await finalPack.arrayBuffer()
+    const webpBytes = result ? await result.blob.arrayBuffer() : new ArrayBuffer(0)
 
     try {
       const session = await startP2pStickerHost(
@@ -282,24 +304,86 @@ export function App() {
 
   const handleDownload = async () => {
     if (!result || !media) return
-    const stem = media.name.replace(/\.[^.]+$/, '') || 'sticker'
+    const stem = (stickerName || media.name.replace(/\.[^.]+$/, '') || 'sticker').trim()
     const a = document.createElement('a')
     a.href = result.url
-    a.download = `${stem}-whatsapp.webp`
+    a.download = `${stem}.webp`
     document.body.appendChild(a)
     a.click()
     a.remove()
-    appendLog(`> Exported .webp: ${stem}-whatsapp.webp`)
+    appendLog(`> Exported .webp: ${stem}.webp`)
     await startQrP2pForResult()
   }
 
-  const handleDownloadWastickers = async () => {
-    if (!result || !media) return
-    const stem = media.name.replace(/\.[^.]+$/, '') || 'shroud-pack'
-    const filename = `${stem}.wastickers`
-    appendLog(`> Packing .wastickers archive (3 slots for 1-tap WhatsApp import)...`)
+  const handleAddToPack = () => {
+    if (!result) return
+    setPackError(null)
+    if (packItems.length >= 30) {
+      setPackError('WhatsApp pack limit is 30 stickers.')
+      return
+    }
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+    const url = URL.createObjectURL(result.blob)
+    const cleanName = (stickerName || `sticker-${packItems.length + 1}`).trim()
+    setPackItems((prev) => [
+      ...prev,
+      { id, name: cleanName, blob: result.blob, url, sizeBytes: result.sizeBytes },
+    ])
+    appendLog(`> Added "${cleanName}" to pack (${packItems.length + 1}/30).`)
+  }
+
+  const handleDropWebpFiles = async (files: FileList | File[]) => {
+    setPackError(null)
+    const list = Array.from(files)
+    for (const file of list) {
+      if (packItems.length >= 30) {
+        setPackError('WhatsApp pack limit is 30 stickers.')
+        break
+      }
+      const check = await validateWhatsAppWebp(file)
+      if (!check.ok) {
+        setPackError(`${file.name}: ${check.reason}`)
+        appendLog(`! Rejected ${file.name}: ${check.reason}`)
+        continue
+      }
+      const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+      const url = URL.createObjectURL(file)
+      const cleanName = file.name.replace(/\.[^.]+$/, '') || 'sticker'
+      setPackItems((prev) => [
+        ...prev,
+        { id, name: cleanName, blob: file, url, sizeBytes: file.size },
+      ])
+      appendLog(`> Added external .webp "${cleanName}" to pack.`)
+    }
+  }
+
+  const handleRenamePackItem = (id: string, nextName: string) => {
+    setPackItems((prev) => prev.map((it) => (it.id === id ? { ...it, name: nextName } : it)))
+  }
+
+  const handleRemovePackItem = (id: string) => {
+    setPackItems((prev) => {
+      const target = prev.find((it) => it.id === id)
+      if (target) URL.revokeObjectURL(target.url)
+      return prev.filter((it) => it.id !== id)
+    })
+  }
+
+  const handleClearPack = () => {
+    packItems.forEach((it) => URL.revokeObjectURL(it.url))
+    setPackItems([])
+    setPackError(null)
+    appendLog('> Cleared sticker pack list.')
+  }
+
+  const handleDownloadPack = async () => {
+    if (packItems.length === 0) return
+    setPackError(null)
+    const cleanPackTitle = (packName || 'SHROUD Pack').trim()
+    const filename = `${cleanPackTitle.replace(/[^a-zA-Z0-9_-]+/g, '_')}.wastickers`
+    appendLog(`> Packing ${packItems.length} sticker(s) into ${filename}...`)
     try {
-      const packBlob = await buildWastickersPack(result.blob, result.url, stem)
+      const packBlob = await buildWastickersPack(packItems, cleanPackTitle)
       const url = URL.createObjectURL(packBlob)
       const a = document.createElement('a')
       a.href = url
@@ -310,9 +394,10 @@ export function App() {
       setTimeout(() => URL.revokeObjectURL(url), 4000)
 
       appendLog(`> ✓ Exported ${filename} (${(packBlob.size / 1024).toFixed(1)} KB). Starting P2P QR host...`)
-      await startQrP2pForResult(packBlob)
+      await startQrP2pForResult(packBlob, filename)
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
+      setPackError(msg)
       appendLog(`! Error packing .wastickers: ${msg}`)
     }
   }
@@ -457,10 +542,11 @@ export function App() {
           </section>
         </main>
       ) : (
-        <main className={`workspace-grid ${step === 1 && !media ? 'single-step' : ''}`}>
+        <main className={`workspace-grid ${step === 1 && !media ? 'with-pack-only' : 'with-pack-full'}`}>
           {(step !== 1 || media) && (
             <CropStage
               t={t}
+              stickerName={stickerName}
               media={media}
               canvasBg={settings.canvasBg}
               canvasScale={settings.canvasScale}
@@ -472,6 +558,7 @@ export function App() {
               speed={settings.speed}
               result={result}
               viewMode={viewMode}
+              onStickerNameChange={setStickerName}
               onViewModeChange={setViewMode}
               onTransformChange={(patch) => handleSettingsChange(patch)}
               onResetTransform={() =>
@@ -497,7 +584,20 @@ export function App() {
             onSettingsChange={handleSettingsChange}
             onForge={handleForge}
             onDownload={handleDownload}
-            onDownloadWastickers={handleDownloadWastickers}
+            onAddToPack={handleAddToPack}
+          />
+
+          <PackSidebar
+            t={t}
+            packName={packName}
+            items={packItems}
+            packError={packError}
+            onPackNameChange={setPackName}
+            onDropWebpFiles={handleDropWebpFiles}
+            onRenameItem={handleRenamePackItem}
+            onRemoveItem={handleRemovePackItem}
+            onClearPack={handleClearPack}
+            onDownloadPack={handleDownloadPack}
           />
         </main>
       )}

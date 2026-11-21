@@ -7,6 +7,7 @@ import {
   HelpCircle,
   Link2,
   Move,
+  Plus,
   QrCode,
   RotateCcw,
   Smartphone,
@@ -45,7 +46,7 @@ interface ToolRackProps {
   onSettingsChange: (patch: Partial<StickerSettings>) => void
   onForge: () => void
   onDownload: () => void
-  onDownloadWastickers: () => void
+  onAddToPack: () => void
 }
 
 const SPEED_PRESETS = [0.5, 1, 1.5, 2, 3, 4]
@@ -67,7 +68,7 @@ export function ToolRack({
   onSettingsChange,
   onForge,
   onDownload,
-  onDownloadWastickers,
+  onAddToPack,
 }: ToolRackProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [urlInput, setUrlInput] = useState('')
@@ -443,13 +444,12 @@ export function ToolRack({
             type="button"
             className="btn-export btn-export-mobile"
             disabled={!result || encoding}
-            onClick={onDownloadWastickers}
+            onClick={onAddToPack}
           >
             <div className="export-icons">
-              <Smartphone size={14} />
-              <span className="os-tag">Android · iOS</span>
+              <Plus size={15} />
             </div>
-            <span className="export-label">{t.downloadWastickersMobile}</span>
+            <span className="export-label">{t.addToPack}</span>
           </button>
         </div>
 

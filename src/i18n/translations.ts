@@ -97,6 +97,15 @@ export interface Translations {
   removeBgLabel: string
   removeBgModelFast: string
   removeBgModelHigh: string
+  addToPack: string
+  packTitle: string
+  packNameLabel: string
+  packDropMain: string
+  packDropSub: string
+  packEmpty: string
+  packClear: string
+  packRemove: string
+  stickerNamePlaceholder: string
 }
 
 const en: Translations = {
@@ -186,6 +195,15 @@ const en: Translations = {
   removeBgLabel: 'Remove Background (100% Local AI)',
   removeBgModelFast: 'MODNet · Fast (~25 MB, People/Portraits)',
   removeBgModelHigh: 'RMBG-1.4 WebGPU · Best Quality (Anime/Objects/All)',
+  addToPack: 'Add to Pack',
+  packTitle: 'STICKER PACK',
+  packNameLabel: 'Pack Name:',
+  packDropMain: 'Drop .webp stickers here',
+  packDropSub: '512×512 · ≤500 KB WhatsApp .webp',
+  packEmpty: 'No stickers in pack yet. Forge one or drop .webp files above.',
+  packClear: 'Clear List',
+  packRemove: 'Remove',
+  stickerNamePlaceholder: 'Sticker name...',
 }
 
 const es: Translations = {
@@ -275,6 +293,15 @@ const es: Translations = {
   removeBgLabel: 'Quitar Fondo (IA 100% Local)',
   removeBgModelFast: 'MODNet · Rápido (~25 MB, Personas/Retratos)',
   removeBgModelHigh: 'RMBG-1.4 WebGPU · Mejor Calidad (Anime/Objetos/Todo)',
+  addToPack: 'Añadir a Pack',
+  packTitle: 'PACK DE STICKERS',
+  packNameLabel: 'Nombre del Pack:',
+  packDropMain: 'Arrastra stickers .webp aquí',
+  packDropSub: '512×512 · ≤500 KB .webp de WhatsApp',
+  packEmpty: 'Sin stickers en el pack. Forja uno o arrastra archivos .webp arriba.',
+  packClear: 'Borrar Lista',
+  packRemove: 'Quitar',
+  stickerNamePlaceholder: 'Nombre del sticker...',
 }
 
 const pt: Translations = {

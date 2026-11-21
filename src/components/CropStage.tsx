@@ -6,6 +6,7 @@ import type { Translations } from '../i18n/translations'
 
 interface CropStageProps {
   t: Translations
+  stickerName: string
   media: MediaInfo | null
   canvasBg: CanvasBgMode
   canvasScale: number
@@ -17,6 +18,7 @@ interface CropStageProps {
   speed: number
   result: EncodeResult | null
   viewMode: 'source' | 'result'
+  onStickerNameChange: (name: string) => void
   onViewModeChange: (mode: 'source' | 'result') => void
   onTransformChange: (patch: {
     canvasScale?: number
@@ -31,6 +33,7 @@ type DragAction = 'move' | 'scale' | 'rotate' | null
 
 export function CropStage({
   t,
+  stickerName,
   media,
   canvasBg,
   canvasScale,
@@ -42,6 +45,7 @@ export function CropStage({
   speed,
   result,
   viewMode,
+  onStickerNameChange,
   onViewModeChange,
   onTransformChange,
   onResetTransform,
@@ -156,9 +160,17 @@ export function CropStage({
   return (
     <div className="panel stage-panel">
       <div className="panel-header">
-        <div className="panel-title-group">
+        <div className="panel-title-group sticker-name-edit-wrap">
           <Scissors size={14} className="icon-crimson" />
-          <span className="panel-title">{t.viewerTitle}</span>
+          <input
+            type="text"
+            maxLength={32}
+            value={stickerName}
+            onChange={(e) => onStickerNameChange(e.target.value)}
+            placeholder={t.stickerNamePlaceholder}
+            className="sticker-name-header-input"
+            aria-label="Sticker name"
+          />
         </div>
         <div className="stage-tabs">
           <button
