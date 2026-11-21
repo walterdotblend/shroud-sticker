@@ -1533,11 +1533,11 @@ button:disabled {
 }
 
 .workspace-grid.with-pack-full {
-  grid-template-columns: 1.05fr 0.95fr 0.78fr;
+  grid-template-columns: 1.1fr 0.95fr 0.68fr;
 }
 
 .workspace-grid.with-pack-only {
-  grid-template-columns: 1.15fr 0.85fr;
+  grid-template-columns: 1.25fr 0.75fr;
 }
 
 @media (max-width: 1120px) {
@@ -1575,21 +1575,21 @@ button:disabled {
 .pack-sidebar {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  min-height: 440px;
+  gap: 8px;
+  align-self: start;
+  height: fit-content;
 }
 
 .pack-dropzone {
-  padding: 12px 10px;
+  padding: 10px 8px;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 3px;
 }
 
 .pack-list {
-  flex: 1;
-  min-height: 150px;
-  max-height: 300px;
+  min-height: 54px;
+  max-height: 210px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -1598,6 +1598,37 @@ button:disabled {
   background: rgba(8, 6, 8, 0.72);
   border: 1px solid var(--border-dim);
   border-radius: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-crimson) #0b080a;
+}
+
+/* Custom Gothic Scrollbars */
+.pack-list::-webkit-scrollbar,
+.terminal-lines::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.pack-list::-webkit-scrollbar-track,
+.terminal-lines::-webkit-scrollbar-track {
+  background: #0b080a;
+  border-radius: 4px;
+}
+
+.pack-list::-webkit-scrollbar-thumb,
+.terminal-lines::-webkit-scrollbar-thumb {
+  background: var(--border-crimson);
+  border-radius: 4px;
+}
+
+.pack-list::-webkit-scrollbar-thumb:hover,
+.terminal-lines::-webkit-scrollbar-thumb:hover {
+  background: var(--crimson-bright);
+}
+
+.terminal-lines {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-crimson) #0b080a;
 }
 
 .pack-empty {

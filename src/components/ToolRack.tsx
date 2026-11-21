@@ -77,10 +77,7 @@ export function ToolRack({
   const maxDur = media ? Math.max(0.5, media.duration) : 10
   const effectiveDuration = computeEffectiveDuration(settings.trimStart, settings.trimEnd, settings.speed)
   const durationTooLong = effectiveDuration > WHATSAPP_MAX_DURATION_SEC
-  const maxSourceFps = Math.max(
-    8,
-    Math.min(30, Math.round((media?.sourceFps ?? 30) * Math.max(0.25, settings.speed)))
-  )
+  const maxSourceFps = Math.max(8, Math.min(30, media?.sourceFps ?? 30))
   const activeFps = Math.min(settings.fps, maxSourceFps)
   const maxAllowedQuality = computeMaxAllowedQuality(activeFps, effectiveDuration, settings.removeBg)
   const activeQuality = Math.min(settings.quality, maxAllowedQuality)
