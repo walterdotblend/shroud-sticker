@@ -238,7 +238,7 @@ export async function encodeStickerNative(
   // Optional 100% local AI background removal per frame (WebGPU / WASM)
   if (settings.removeBg && renderedCanvases.length > 0) {
     const loadedBg = await ensureBgRemoverLoaded(
-      settings.bgModel || 'modnet',
+      settings.bgModel || 'mediapipe',
       callbacks.onLog,
       callbacks.onProgress
     )

@@ -1,17 +1,19 @@
 /**
- * 100% Client-Side AI Background Removal Engine powered by @huggingface/transformers (ONNX + WebGPU/WASM).
- * Dynamically imported so initial page load stays 0 KB until the user enables "Remove Background".
+ * 100% Client-Side AI Background Removal Engine:
+ * - 'mediapipe': Google MediaPipe Selfie Segmenter (float16, ~244 KB, WebGL2 GPU, ~15-30ms/frame on any PC)
+ * - 'rmbg': BRIA RMBG-1.4 via @huggingface/transformers (WebGPU fp32, high precision for objects/anime)
  */
 
-export type BgRemoveModelId = 'modnet' | 'rmbg'
+export type BgRemoveModelId = 'mediapipe' | 'rmbg'
 
-const MODEL_REPOS: Record<BgRemoveModelId, string> = {
-  modnet: 'Xenova/modnet',
-  rmbg: 'briaai/RMBG-1.4',
+interface LoadedMediaPipe {
+  kind: 'mediapipe'
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  segmenter: any
 }
 
-interface LoadedBgModel {
-  modelId: BgRemoveModelId
+interface LoadedRmbg {
+  kind: 'rmbg'
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   model: any
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -19,6 +21,8 @@ interface LoadedBgModel {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   RawImage: any
 }
+
+export type LoadedBgModel = LoadedMediaPipe | LoadedRmbg
 
 let cachedModel: LoadedBgModel | null = null
 
@@ -39,12 +43,38 @@ export async function ensureBgRemoverLoaded(
   onLog?: (msg: string) => void,
   onDownloadProgress?: (ratio: number, text: string) => void
 ): Promise<LoadedBgModel> {
-  if (cachedModel && cachedModel.modelId === modelId) {
+  if (cachedModel && cachedModel.kind === modelId) {
     return cachedModel
   }
 
-  const repo = MODEL_REPOS[modelId]
-  onLog?.(`> Loading local AI background removal model (${repo})...`)
+  if (modelId === 'mediapipe') {
+    onLog?.('> Loading MediaPipe GPU Segmenter (244 KB, WebGL2 GPU)...')
+    onDownloadProgress?.(0.08, 'Loading MediaPipe GPU model (244 KB)...')
+
+    const { FilesetResolver, ImageSegmenter } = await import('@mediapipe/tasks-vision')
+    const vision = await FilesetResolver.forVisionTasks(
+      'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.2.3/wasm'
+    )
+
+    const segmenter = await ImageSegmenter.createFromOptions(vision, {
+      baseOptions: {
+        modelAssetPath:
+          'https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite',
+        delegate: 'GPU',
+      },
+      runningMode: 'IMAGE',
+      outputCategoryMask: false,
+      outputConfidenceMasks: true,
+    })
+
+    onLog?.('> ✓ MediaPipe GPU Segmenter ready (ultra-fast).')
+    cachedModel = { kind: 'mediapipe', segmenter }
+    return cachedModel
+  }
+
+  // High-precision RMBG-1.4 on WebGPU (using fp32/fp16 — NOT q8, which forces slow CPU fallback)
+  const repo = 'briaai/RMBG-1.4'
+  onLog?.(`> Loading ${repo} (WebGPU)...`)
 
   const { AutoModel, AutoProcessor, RawImage, env } = await import('@huggingface/transformers')
   env.allowLocalModels = false
@@ -67,57 +97,60 @@ export async function ensureBgRemoverLoaded(
     progress_callback: progressCb,
   })
 
-  // Try WebGPU first, fall back to WASM if WebGPU fails on this GPU/driver
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let model: any
-  try {
-    model = await AutoModel.from_pretrained(repo, {
-      device,
-      dtype: 'q8',
-      progress_callback: progressCb,
-    })
-  } catch {
-    onLog?.('> Quantized WebGPU init failed, falling back to default WASM...')
-    model = await AutoModel.from_pretrained(repo, {
-      device: 'wasm',
-      progress_callback: progressCb,
-    })
-  }
+  const model = await AutoModel.from_pretrained(repo, {
+    device,
+    progress_callback: progressCb,
+  })
 
-  onLog?.(`> ✓ AI model ${repo} ready (cached locally in browser).`)
-  cachedModel = { modelId, model, processor, RawImage }
+  onLog?.(`> ✓ ${repo} ready (cached locally in browser).`)
+  cachedModel = { kind: 'rmbg', model, processor, RawImage }
   return cachedModel
 }
 
 /**
- * Removes the background from a rendered 512x512 frame canvas in-place using the loaded ONNX model.
+ * Removes the background from a rendered 512x512 frame canvas in-place.
  * Preserves existing transparent borders by multiplying alpha channels.
  */
 export async function applyAiBgRemovalToCanvas(
   canvas: HTMLCanvasElement,
   loaded: LoadedBgModel
 ): Promise<void> {
+  const ctx = canvas.getContext('2d')!
+  const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+  const rgba = imgData.data
+  const pixelCount = canvas.width * canvas.height
+
+  if (loaded.kind === 'mediapipe') {
+    const result = loaded.segmenter.segment(canvas)
+    const confMask = result?.confidenceMasks?.[0]
+    if (!confMask) return
+    const floats = confMask.getAsFloat32Array() as Float32Array
+    const len = Math.min(pixelCount, floats.length)
+    for (let i = 0; i < len; i++) {
+      // Smooth threshold around 0.5 for crisp sticker edges
+      const c = floats[i]
+      const maskAlpha = c <= 0.25 ? 0 : c >= 0.75 ? 255 : Math.round(((c - 0.25) / 0.5) * 255)
+      rgba[i * 4 + 3] = Math.round((rgba[i * 4 + 3] * maskAlpha) / 255)
+    }
+    confMask.close?.()
+    result.close?.()
+    ctx.putImageData(imgData, 0, 0)
+    return
+  }
+
   const { model, processor, RawImage } = loaded
   const rawImg = RawImage.fromCanvas(canvas)
   const { pixel_values } = await processor(rawImg)
   const { output } = await model({ input: pixel_values })
 
-  // Extract single-channel alpha matte tensor and resize to canvas dimensions
   const maskTensor = output[0].mul(255).to('uint8')
   const maskImg = await RawImage.fromTensor(maskTensor).resize(canvas.width, canvas.height)
   const maskData = maskImg.data as Uint8Array
-
-  const ctx = canvas.getContext('2d')!
-  const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-  const rgba = imgData.data
-  const pixelCount = canvas.width * canvas.height
   const stride = Math.max(1, Math.floor(maskData.length / pixelCount))
 
   for (let i = 0; i < pixelCount; i++) {
     const maskAlpha = maskData[i * stride]
-    const existingAlpha = rgba[i * 4 + 3]
-    // Multiply existing alpha with predicted mask alpha so outer transparent canvas padding stays clean
-    rgba[i * 4 + 3] = Math.round((existingAlpha * maskAlpha) / 255)
+    rgba[i * 4 + 3] = Math.round((rgba[i * 4 + 3] * maskAlpha) / 255)
   }
 
   ctx.putImageData(imgData, 0, 0)

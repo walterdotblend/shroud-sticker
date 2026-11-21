@@ -133,8 +133,8 @@ export function CropStage({
       const dx = (e.clientX - d.startClientX) * pxToCanvas
       const dy = (e.clientY - d.startClientY) * pxToCanvas
       onTransformChange({
-        canvasX: Math.round(Math.max(-420, Math.min(420, d.startX + dx))),
-        canvasY: Math.round(Math.max(-420, Math.min(420, d.startY + dy))),
+        canvasX: Math.round(d.startX + dx),
+        canvasY: Math.round(d.startY + dy),
       })
     } else if (d.action === 'scale') {
       const dist = Math.max(10, Math.hypot(e.clientX - d.centerX, e.clientY - d.centerY))

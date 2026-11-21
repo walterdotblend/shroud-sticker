@@ -281,38 +281,18 @@ export function ToolRack({
           </div>
 
           <div className="dials-row">
-            <div className="vial-with-input">
-              <VialControl
-                label={t.scaleLabel}
-                value={Math.round(settings.canvasScale * 100)}
-                min={10}
-                max={300}
-                step={5}
-                unit="%"
-                onChange={(pct) => onSettingsChange({ canvasScale: Number((pct / 100).toFixed(2)) })}
-                onReset={() => onSettingsChange({ canvasScale: 1 })}
-              />
-              <div className="scale-number-wrap">
-                <input
-                  type="number"
-                  min={10}
-                  max={2000}
-                  step={5}
-                  value={Math.round(settings.canvasScale * 100)}
-                  onChange={(e) => {
-                    const val = Number(e.target.value)
-                    if (Number.isFinite(val) && val > 0) {
-                      onSettingsChange({
-                        canvasScale: Number((Math.max(10, Math.min(2000, val)) / 100).toFixed(2)),
-                      })
-                    }
-                  }}
-                  className="terminal-input speed-number-box"
-                  aria-label="Scale percentage"
-                />
-                <span className="muted-meta">%</span>
-              </div>
-            </div>
+            <VialControl
+              label={t.scaleLabel}
+              value={Math.round(settings.canvasScale * 100)}
+              min={10}
+              max={300}
+              editMax={2000}
+              step={5}
+              unit="%"
+              editable
+              onChange={(pct) => onSettingsChange({ canvasScale: Number((pct / 100).toFixed(2)) })}
+              onReset={() => onSettingsChange({ canvasScale: 1 })}
+            />
             <VialControl
               label={t.rotateLabel}
               value={settings.rotationDeg}
@@ -425,11 +405,11 @@ export function ToolRack({
             <select
               value={settings.bgModel}
               onChange={(e) =>
-                onSettingsChange({ bgModel: e.target.value as 'modnet' | 'rmbg' })
+                onSettingsChange({ bgModel: e.target.value as 'mediapipe' | 'rmbg' })
               }
               className="terminal-select"
             >
-              <option value="modnet">{t.removeBgModelFast}</option>
+              <option value="mediapipe">{t.removeBgModelFast}</option>
               <option value="rmbg">{t.removeBgModelHigh}</option>
             </select>
           )}

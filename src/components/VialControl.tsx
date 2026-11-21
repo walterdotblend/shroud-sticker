@@ -1,12 +1,14 @@
-import { useRef } from 'react'
+import { useState, useRef } from 'react'
 
 interface VialControlProps {
   label: string
   value: number
   min: number
   max: number
+  editMax?: number
   step?: number
   unit?: string
+  editable?: boolean
   accent?: 'obsidian' | 'cursed'
   onChange: (value: number) => void
   onReset?: () => void
@@ -14,23 +16,27 @@ interface VialControlProps {
 
 /**
  * Vertical gothic vial control filled with dark bubbling liquid.
- * Drag up/down, scroll wheel, or double-click to reset.
+ * Drag up/down, scroll wheel, double-click to reset, or click the value text to type directly.
  */
 export function VialControl({
   label,
   value,
   min,
   max,
+  editMax,
   step = 1,
   unit = '',
+  editable = false,
   accent = 'obsidian',
   onChange,
   onReset,
 }: VialControlProps) {
   const dragRef = useRef<{ startY: number; startVal: number } | null>(null)
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(String(value))
 
-  const clampAndSnap = (raw: number) => {
-    const clamped = Math.max(min, Math.min(max, raw))
+  const clampAndSnap = (raw: number, upper = max) => {
+    const clamped = Math.max(min, Math.min(upper, raw))
     const snapped = Math.round(clamped / step) * step
     return Number(snapped.toFixed(2))
   }
@@ -49,7 +55,7 @@ export function VialControl({
     const dy = dragRef.current.startY - e.clientY
     const range = max - min
     const next = dragRef.current.startVal + (dy / 110) * range
-    onChange(clampAndSnap(next))
+    onChange(clampAndSnap(next, max))
   }
 
   const handlePointerUp = () => {
@@ -59,7 +65,15 @@ export function VialControl({
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault()
     const dir = e.deltaY < 0 ? 1 : -1
-    onChange(clampAndSnap(value + dir * step))
+    onChange(clampAndSnap(value + dir * step, editMax ?? max))
+  }
+
+  const commitDraft = () => {
+    setEditing(false)
+    const num = Number(draft.replace(/[^0-9.-]/g, ''))
+    if (Number.isFinite(num) && num > 0) {
+      onChange(clampAndSnap(num, editMax ?? max))
+    }
   }
 
   return (
@@ -89,10 +103,36 @@ export function VialControl({
       </div>
       <div className="vial-meta">
         <span className="vial-label">{label}</span>
-        <strong className="vial-value">
-          {value}
-          {unit}
-        </strong>
+        {editable && editing ? (
+          <input
+            type="number"
+            min={min}
+            max={editMax ?? max}
+            step={step}
+            autoFocus
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commitDraft}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') commitDraft()
+              if (e.key === 'Escape') setEditing(false)
+            }}
+            className="vial-inline-input"
+          />
+        ) : (
+          <strong
+            className={`vial-value ${editable ? 'vial-value-editable' : ''}`}
+            onClick={() => {
+              if (!editable) return
+              setDraft(String(value))
+              setEditing(true)
+            }}
+            title={editable ? 'Click to type custom value' : undefined}
+          >
+            {value}
+            {unit}
+          </strong>
+        )}
       </div>
     </div>
   )
