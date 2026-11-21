@@ -1476,3 +1476,27 @@ button:disabled {
 .qr-card-large .qr-info {
   align-items: center;
 }
+
+/* Scale Number Input & AI Remove Background Box */
+.vial-with-input {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.scale-number-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.bg-remove-box {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 9px 11px;
+  border-radius: 6px;
+  background: rgba(15, 10, 14, 0.8);
+  border: 1px solid var(--border-dim);
+}

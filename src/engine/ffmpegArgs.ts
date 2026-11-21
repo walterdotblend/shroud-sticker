@@ -81,7 +81,7 @@ export function buildStickerFilterGraph(
   filters.push('format=rgba')
 
   const base = computeBaseFitSize(effW, effH, size)
-  const scale = Math.max(0.15, Math.min(3.0, settings.canvasScale || 1))
+  const scale = Math.max(0.1, Math.min(20.0, settings.canvasScale || 1))
   let drawW = Math.max(4, Math.round(base.width * scale))
   let drawH = Math.max(4, Math.round(base.height * scale))
   if (drawW % 2 !== 0) drawW += 1

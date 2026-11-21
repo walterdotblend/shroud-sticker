@@ -138,7 +138,7 @@ export function CropStage({
       })
     } else if (d.action === 'scale') {
       const dist = Math.max(10, Math.hypot(e.clientX - d.centerX, e.clientY - d.centerY))
-      const nextScale = Math.max(0.15, Math.min(3.0, d.startScale * (dist / d.startDist)))
+      const nextScale = Math.max(0.1, Math.min(20.0, d.startScale * (dist / d.startDist)))
       onTransformChange({ canvasScale: Number(nextScale.toFixed(2)) })
     } else if (d.action === 'rotate') {
       const rad = Math.atan2(e.clientY - d.centerY, e.clientX - d.centerX)

@@ -45,6 +45,8 @@ const INITIAL_SETTINGS: StickerSettings = {
   fps: 15,
   quality: 75,
   cursedLevel: 0,
+  removeBg: false,
+  bgModel: 'modnet',
   compressionLevel: 4,
   autoCompressWhatsApp: true,
   maxBytes: WHATSAPP_SAFE_TARGET_BYTES,

@@ -281,16 +281,38 @@ export function ToolRack({
           </div>
 
           <div className="dials-row">
-            <VialControl
-              label={t.scaleLabel}
-              value={Math.round(settings.canvasScale * 100)}
-              min={15}
-              max={300}
-              step={5}
-              unit="%"
-              onChange={(pct) => onSettingsChange({ canvasScale: Number((pct / 100).toFixed(2)) })}
-              onReset={() => onSettingsChange({ canvasScale: 1 })}
-            />
+            <div className="vial-with-input">
+              <VialControl
+                label={t.scaleLabel}
+                value={Math.round(settings.canvasScale * 100)}
+                min={10}
+                max={300}
+                step={5}
+                unit="%"
+                onChange={(pct) => onSettingsChange({ canvasScale: Number((pct / 100).toFixed(2)) })}
+                onReset={() => onSettingsChange({ canvasScale: 1 })}
+              />
+              <div className="scale-number-wrap">
+                <input
+                  type="number"
+                  min={10}
+                  max={2000}
+                  step={5}
+                  value={Math.round(settings.canvasScale * 100)}
+                  onChange={(e) => {
+                    const val = Number(e.target.value)
+                    if (Number.isFinite(val) && val > 0) {
+                      onSettingsChange({
+                        canvasScale: Number((Math.max(10, Math.min(2000, val)) / 100).toFixed(2)),
+                      })
+                    }
+                  }}
+                  className="terminal-input speed-number-box"
+                  aria-label="Scale percentage"
+                />
+                <span className="muted-meta">%</span>
+              </div>
+            </div>
             <VialControl
               label={t.rotateLabel}
               value={settings.rotationDeg}
@@ -388,6 +410,29 @@ export function ToolRack({
             onChange={(c) => onSettingsChange({ cursedLevel: Math.max(0, Math.min(100, c)) })}
             onReset={() => onSettingsChange({ cursedLevel: 0 })}
           />
+        </div>
+
+        <div className="bg-remove-box">
+          <label className="toggle-pill">
+            <input
+              type="checkbox"
+              checked={settings.removeBg}
+              onChange={(e) => onSettingsChange({ removeBg: e.target.checked })}
+            />
+            <span>{t.removeBgLabel}</span>
+          </label>
+          {settings.removeBg && (
+            <select
+              value={settings.bgModel}
+              onChange={(e) =>
+                onSettingsChange({ bgModel: e.target.value as 'modnet' | 'rmbg' })
+              }
+              className="terminal-select"
+            >
+              <option value="modnet">{t.removeBgModelFast}</option>
+              <option value="rmbg">{t.removeBgModelHigh}</option>
+            </select>
+          )}
         </div>
 
         <button type="button" className="btn-crimson forge-main-btn" disabled={!media || encoding} onClick={onForge}>

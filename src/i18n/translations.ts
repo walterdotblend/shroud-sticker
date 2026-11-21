@@ -94,6 +94,9 @@ export interface Translations {
   p2pReceivingTitle: string
   p2pShareStickerMaker: string
   p2pDownloadWastickers: string
+  removeBgLabel: string
+  removeBgModelFast: string
+  removeBgModelHigh: string
 }
 
 const en: Translations = {
@@ -180,6 +183,9 @@ const en: Translations = {
   p2pReceivingTitle: 'RECEIVING STICKER FROM YOUR PC',
   p2pShareStickerMaker: 'Open in Sticker Maker (.wastickers)',
   p2pDownloadWastickers: 'Download .wastickers',
+  removeBgLabel: 'Remove Background (100% Local AI)',
+  removeBgModelFast: 'MODNet · Fast (~25 MB, Apache-2.0)',
+  removeBgModelHigh: 'RMBG-1.4 · High Precision (~44 MB)',
 }
 
 const es: Translations = {
@@ -266,6 +272,9 @@ const es: Translations = {
   p2pReceivingTitle: 'RECIBIENDO STICKER DESDE TU PC',
   p2pShareStickerMaker: 'Abrir en Sticker Maker (.wastickers)',
   p2pDownloadWastickers: 'Descargar .wastickers',
+  removeBgLabel: 'Quitar Fondo (IA 100% Local)',
+  removeBgModelFast: 'MODNet · Rápido (~25 MB, Apache-2.0)',
+  removeBgModelHigh: 'RMBG-1.4 · Alta Precisión (~44 MB)',
 }
 
 const pt: Translations = {

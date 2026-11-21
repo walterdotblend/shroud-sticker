@@ -1,4 +1,5 @@
 import { GifReader } from 'omggif'
+import { applyAiBgRemovalToCanvas, ensureBgRemoverLoaded } from './bgRemover'
 import {
   computeBaseFitSize,
   computeEffectiveDuration,
@@ -34,7 +35,7 @@ function drawTransformedFrame(
   }
 
   const base = computeBaseFitSize(sourceWidth, sourceHeight, size)
-  const scale = Math.max(0.15, Math.min(3.0, settings.canvasScale || 1))
+  const scale = Math.max(0.1, Math.min(20.0, settings.canvasScale || 1))
   const drawW = Math.max(4, Math.round(base.width * scale))
   const drawH = Math.max(4, Math.round(base.height * scale))
 
@@ -233,6 +234,25 @@ export async function encodeStickerNative(
   const steps = settings.autoCompressWhatsApp
     ? planAutoCompressSteps(baseFps, settings.quality)
     : [{ fps: baseFps, quality: settings.quality, compressionLevel: 1 }]
+
+  // Optional 100% local AI background removal per frame (WebGPU / WASM)
+  if (settings.removeBg && renderedCanvases.length > 0) {
+    const loadedBg = await ensureBgRemoverLoaded(
+      settings.bgModel || 'modnet',
+      callbacks.onLog,
+      callbacks.onProgress
+    )
+    callbacks.onLog(`> Removing background on ${renderedCanvases.length} frames locally...`)
+    for (let i = 0; i < renderedCanvases.length; i++) {
+      await applyAiBgRemovalToCanvas(renderedCanvases[i], loadedBg)
+      const r = (i + 1) / renderedCanvases.length
+      callbacks.onProgress(
+        0.25 + r * 0.3,
+        `Removing BG (AI) frame ${i + 1}/${renderedCanvases.length}...`
+      )
+    }
+    callbacks.onLog('> ✓ AI background removal complete.')
+  }
 
   const passLogs: EncodePassLog[] = []
   let bestBytes: Uint8Array | null = null
