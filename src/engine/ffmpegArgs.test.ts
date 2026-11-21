@@ -29,7 +29,7 @@ const baseSettings: StickerSettings = {
   quality: 75,
   cursedLevel: 0,
   removeBg: false,
-  bgModel: 'mediapipe',
+  bgModel: 'rmbg',
   compressionLevel: 4,
   autoCompressWhatsApp: true,
   maxBytes: WHATSAPP_SAFE_TARGET_BYTES,

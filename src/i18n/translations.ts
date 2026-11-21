@@ -184,8 +184,8 @@ const en: Translations = {
   p2pShareStickerMaker: 'Open in Sticker Maker (.wastickers)',
   p2pDownloadWastickers: 'Download .wastickers',
   removeBgLabel: 'Remove Background (100% Local AI)',
-  removeBgModelFast: 'MediaPipe GPU · Ultra-Fast (244 KB, People/Memes)',
-  removeBgModelHigh: 'RMBG-1.4 WebGPU · High Precision (Objects/Anime)',
+  removeBgModelFast: 'MODNet · Fast (~25 MB, People/Portraits)',
+  removeBgModelHigh: 'RMBG-1.4 WebGPU · Best Quality (Anime/Objects/All)',
 }
 
 const es: Translations = {
@@ -273,8 +273,8 @@ const es: Translations = {
   p2pShareStickerMaker: 'Abrir en Sticker Maker (.wastickers)',
   p2pDownloadWastickers: 'Descargar .wastickers',
   removeBgLabel: 'Quitar Fondo (IA 100% Local)',
-  removeBgModelFast: 'MediaPipe GPU · Ultra Rápido (244 KB, Personas/Memes)',
-  removeBgModelHigh: 'RMBG-1.4 WebGPU · Alta Precisión (Objetos/Anime)',
+  removeBgModelFast: 'MODNet · Rápido (~25 MB, Personas/Retratos)',
+  removeBgModelHigh: 'RMBG-1.4 WebGPU · Mejor Calidad (Anime/Objetos/Todo)',
 }
 
 const pt: Translations = {

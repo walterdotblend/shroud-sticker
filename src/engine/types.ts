@@ -28,7 +28,7 @@ export interface StickerSettings {
   quality: number
   cursedLevel: number
   removeBg: boolean
-  bgModel: 'mediapipe' | 'rmbg'
+  bgModel: 'modnet' | 'rmbg'
   compressionLevel: number
   autoCompressWhatsApp: boolean
   maxBytes: number

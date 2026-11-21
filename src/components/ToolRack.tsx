@@ -405,12 +405,12 @@ export function ToolRack({
             <select
               value={settings.bgModel}
               onChange={(e) =>
-                onSettingsChange({ bgModel: e.target.value as 'mediapipe' | 'rmbg' })
+                onSettingsChange({ bgModel: e.target.value as 'modnet' | 'rmbg' })
               }
               className="terminal-select"
             >
-              <option value="mediapipe">{t.removeBgModelFast}</option>
               <option value="rmbg">{t.removeBgModelHigh}</option>
+              <option value="modnet">{t.removeBgModelFast}</option>
             </select>
           )}
         </div>
