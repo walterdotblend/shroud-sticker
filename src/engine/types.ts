@@ -67,6 +67,6 @@ export interface EncodeResult {
 }
 
 export const WHATSAPP_MAX_BYTES = 500 * 1024 // 500 KB hard limit
-export const WHATSAPP_SAFE_TARGET_BYTES = 440 * 1024 // 440 KB safe target so Sticker Maker doesn't re-encode/drop FPS
+export const WHATSAPP_SAFE_TARGET_BYTES = 485 * 1024 // 485 KB safe target preserving smooth FPS under 500 KB
 export const WHATSAPP_MAX_DURATION_SEC = 10
 export const WHATSAPP_STICKER_SIZE = 512
