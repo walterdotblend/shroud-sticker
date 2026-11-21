@@ -37,17 +37,64 @@ function probeImageDimensions(objectUrl: string): Promise<{ width: number; heigh
   })
 }
 
-function probeVideoMetadata(objectUrl: string): Promise<{ width: number; height: number; duration: number }> {
+function probeVideoMetadata(objectUrl: string): Promise<{ width: number; height: number; duration: number; sourceFps: number }> {
   return new Promise((resolve, reject) => {
     const video = document.createElement('video')
-    video.preload = 'metadata'
+    video.preload = 'auto'
     video.muted = true
+    video.playsInline = true
+
     video.onloadedmetadata = () => {
       const width = video.videoWidth || 512
       const height = video.videoHeight || 512
       const duration = Number.isFinite(video.duration) && video.duration > 0 ? video.duration : 5
-      resolve({ width, height, duration })
+
+      // Measure real video FPS quickly (~220ms) if requestVideoFrameCallback is supported
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const vAny = video as any
+      if (typeof vAny.requestVideoFrameCallback !== 'function' || duration < 0.25) {
+        resolve({ width, height, duration, sourceFps: 30 })
+        return
+      }
+
+      let firstMediaTime: number | null = null
+      let firstPresented: number | null = null
+      let done = false
+
+      const finish = (fps: number) => {
+        if (done) return
+        done = true
+        video.pause()
+        video.src = ''
+        resolve({ width, height, duration, sourceFps: Math.max(8, Math.min(60, Math.round(fps))) })
+      }
+
+      const timer = setTimeout(() => finish(30), 450)
+
+      const onFrame = (_now: number, meta: { mediaTime: number; presentedFrames: number }) => {
+        if (done) return
+        if (firstMediaTime === null) {
+          firstMediaTime = meta.mediaTime
+          firstPresented = meta.presentedFrames
+        } else {
+          const dt = meta.mediaTime - firstMediaTime
+          const df = meta.presentedFrames - (firstPresented ?? 0)
+          if (dt >= 0.18 && df >= 2) {
+            clearTimeout(timer)
+            finish(df / dt)
+            return
+          }
+        }
+        vAny.requestVideoFrameCallback(onFrame)
+      }
+
+      vAny.requestVideoFrameCallback(onFrame)
+      video.play().catch(() => {
+        clearTimeout(timer)
+        finish(30)
+      })
     }
+
     video.onerror = () => reject(new Error('No se pudo cargar el video en el navegador.'))
     video.src = objectUrl
   })
@@ -79,13 +126,13 @@ export async function probeMediaFile(file: File): Promise<MediaInfo> {
       }
     }
 
-    const { width, height, duration } = await probeVideoMetadata(objectUrl)
+    const { width, height, duration, sourceFps } = await probeVideoMetadata(objectUrl)
     return {
       name: file.name,
       width,
       height,
       duration,
-      sourceFps: 30,
+      sourceFps,
       sizeBytes: file.size,
       isGif: false,
       objectUrl,

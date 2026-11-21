@@ -29,11 +29,20 @@ export function computeEffectiveDuration(trimStart: number, trimEnd: number, spe
   return raw / safeSpeed
 }
 
-export function computeMaxAllowedQuality(fps: number, durationSec: number): number {
-  // Higher FPS * duration consumes more of the 500 KB WhatsApp budget, so cap max quality dynamically
+export function computeMaxAllowedQuality(
+  fps: number,
+  durationSec: number,
+  removeBg = false
+): number {
+  // Higher FPS * duration consumes more of the 500 KB WhatsApp budget.
+  // When AI background removal is active, lossless ALPH chunks take extra bytes,
+  // so cap max initial quality lower to preserve the user's selected FPS.
   const totalFrames = Math.max(8, fps * Math.max(0.5, durationSec))
-  const penalty = Math.max(0, totalFrames - 45) * 0.42
-  return Math.max(20, Math.min(95, Math.round(95 - penalty)))
+  const rate = removeBg ? 0.68 : 0.42
+  const baseCeiling = removeBg ? 75 : 95
+  const threshold = removeBg ? 25 : 45
+  const penalty = Math.max(0, totalFrames - threshold) * rate
+  return Math.max(15, Math.min(baseCeiling, Math.round(baseCeiling - penalty)))
 }
 
 export function computeBaseFitSize(sourceWidth: number, sourceHeight: number, canvasSize = 512): { width: number; height: number } {

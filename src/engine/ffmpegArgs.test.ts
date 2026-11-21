@@ -4,6 +4,7 @@ import {
   buildStickerFilterGraph,
   computeBaseFitSize,
   computeEffectiveDuration,
+  computeMaxAllowedQuality,
   parseFfmpegDuration,
   parseFfmpegTime,
   planAutoCompressSteps,
@@ -39,10 +40,9 @@ describe('ffmpegArgs', () => {
   it('parses ffmpeg duration and time lines', () => {
     expect(parseFfmpegDuration('Duration: 00:01:23.45, start: 0.000000')).toBeCloseTo(83.45, 2)
     expect(parseFfmpegDuration('no duration here')).toBeNull()
-    expect(parseFfmpegTime('frame=  42 fps=25 q=75.0 size= 128kB time=00:00:02.50 bitrate=419.4kbits/s')).toBeCloseTo(
-      2.5,
-      2
-    )
+    expect(
+      parseFfmpegTime('frame=  42 fps=25 q=75.0 size= 128kB time=00:00:02.50 bitrate=419.4kbits/s')
+    ).toBeCloseTo(2.5, 2)
   })
 
   it('computes effective duration with speed', () => {
@@ -75,7 +75,13 @@ describe('ffmpegArgs', () => {
   })
 
   it('builds libwebp args with infinite loop and no audio', () => {
-    const args = buildStickerArgs('input.mp4', 'sticker.webp', { ...baseSettings, trimStart: 1.5, trimEnd: 5.5 }, 500, 500)
+    const args = buildStickerArgs(
+      'input.mp4',
+      'sticker.webp',
+      { ...baseSettings, trimStart: 1.5, trimEnd: 5.5 },
+      500,
+      500
+    )
     expect(args).toContain('-ss')
     expect(args).toContain('1.500')
     expect(args).toContain('-t')
@@ -116,5 +122,11 @@ describe('ffmpegArgs', () => {
     ]
     expect(selectWeightedBanner(banners, 'viewer_left', 'es')?.id).toBe('b1')
     expect(selectWeightedBanner(banners, 'viewer_right', 'en')?.id).toBe('b2')
+  })
+
+  it('computes dynamic max quality lower when AI background removal is enabled', () => {
+    const normalMax = computeMaxAllowedQuality(15, 4, false)
+    const bgMax = computeMaxAllowedQuality(15, 4, true)
+    expect(bgMax).toBeLessThan(normalMax)
   })
 })
