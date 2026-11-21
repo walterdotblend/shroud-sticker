@@ -69,8 +69,10 @@ export async function ensureBgRemoverLoaded(
   })
 
   // Cap processor input size to <=512x512 so 4K/1024px never wastes GPU/CPU time
-  if (processor?.feature_extractor?.size) {
-    processor.feature_extractor.size = { width: 512, height: 512 }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const fe = (processor as any)?.feature_extractor
+  if (fe?.size) {
+    fe.size = { width: 512, height: 512 }
   }
 
   // Use fp32 on WebGPU (avoid q8 which forces slow CPU fallback on many WebGPU drivers)
