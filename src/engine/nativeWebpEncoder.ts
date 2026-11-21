@@ -166,7 +166,8 @@ export async function encodeStickerNative(
   callbacks.onLog('> Using Fast Native WebP Muxer (0 MB download, GPU Canvas + C++ libwebp)...')
   callbacks.onProgress(0.06, 'Extracting & rendering 512×512 frames...')
 
-  const baseFps = Math.max(8, Math.min(30, Math.round(settings.fps)))
+  const maxAllowedFps = Math.max(8, Math.min(30, media.sourceFps || 30))
+  const baseFps = Math.max(8, Math.min(maxAllowedFps, Math.round(settings.fps)))
   const totalBaseFrames = Math.max(2, Math.min(150, Math.round(effectiveDuration * baseFps)))
   const renderedCanvases: HTMLCanvasElement[] = []
 
@@ -263,9 +264,9 @@ export async function encodeStickerNative(
     const effectiveQ =
       cursed > 0 ? Math.max(3, Math.round(step.quality * (1 - (cursed / 100) * 0.88))) : step.quality
 
-    // Subsample cached canvases if step.fps < baseFps
+    // Subsample cached canvases if step.fps < baseFps, preserving exact effectiveDuration
     const stepFrameCount = Math.max(1, Math.round((renderedCanvases.length * step.fps) / baseFps))
-    const frameDurMs = Math.max(20, Math.round(1000 / step.fps))
+    const frameDurMs = Math.max(20, Math.round((effectiveDuration * 1000) / stepFrameCount))
     const encodedFrames: Array<{ webpBytes: Uint8Array; durationMs: number }> = []
 
     callbacks.onLog(`> Pass ${passIdx + 1}: fps=${step.fps}, q=${effectiveQ} (${stepFrameCount} frames)`)
