@@ -48,7 +48,7 @@ export async function buildWastickersPack(webpBlob: Blob, webpUrl: string, packT
 
 export async function generateAppQrDataUrl(targetUrl: string): Promise<string> {
   return QRCode.toDataURL(targetUrl, {
-    width: 180,
+    width: 260,
     margin: 2,
     color: {
       dark: '#e6c2c2',

@@ -247,7 +247,38 @@ export function App() {
     }
   }
 
-  const handleDownload = () => {
+  const startQrP2pForResult = async (packBlob?: Blob) => {
+    if (!result || !media) return
+    const stem = media.name.replace(/\.[^.]+$/, '') || 'shroud-pack'
+    const filename = `${stem}.wastickers`
+    const finalPack = packBlob ?? (await buildWastickersPack(result.blob, result.url, stem))
+
+    p2pHostRef.current?.destroy()
+    setP2pStatus('Initializing WebRTC P2P channel...')
+
+    const [wastickersBytes, webpBytes] = await Promise.all([
+      finalPack.arrayBuffer(),
+      result.blob.arrayBuffer(),
+    ])
+
+    try {
+      const session = await startP2pStickerHost(
+        { filename, wastickersBytes, webpBytes },
+        (st) => {
+          setP2pStatus(st)
+          appendLog(`> [P2P] ${st}`)
+        }
+      )
+      p2pHostRef.current = session
+      setQrDataUrl(session.qrDataUrl)
+    } catch {
+      const fallbackQr = await generateAppQrDataUrl(window.location.href)
+      setQrDataUrl(fallbackQr)
+      setP2pStatus('WebRTC signaling unavailable; transfer the file to your mobile.')
+    }
+  }
+
+  const handleDownload = async () => {
     if (!result || !media) return
     const stem = media.name.replace(/\.[^.]+$/, '') || 'sticker'
     const a = document.createElement('a')
@@ -257,6 +288,7 @@ export function App() {
     a.click()
     a.remove()
     appendLog(`> Exported .webp: ${stem}-whatsapp.webp`)
+    await startQrP2pForResult()
   }
 
   const handleDownloadWastickers = async () => {
@@ -276,29 +308,7 @@ export function App() {
       setTimeout(() => URL.revokeObjectURL(url), 4000)
 
       appendLog(`> ✓ Exported ${filename} (${(packBlob.size / 1024).toFixed(1)} KB). Starting P2P QR host...`)
-      p2pHostRef.current?.destroy()
-      setP2pStatus('Initializing WebRTC P2P channel...')
-
-      const [wastickersBytes, webpBytes] = await Promise.all([
-        packBlob.arrayBuffer(),
-        result.blob.arrayBuffer(),
-      ])
-
-      try {
-        const session = await startP2pStickerHost(
-          { filename, wastickersBytes, webpBytes },
-          (st) => {
-            setP2pStatus(st)
-            appendLog(`> [P2P] ${st}`)
-          }
-        )
-        p2pHostRef.current = session
-        setQrDataUrl(session.qrDataUrl)
-      } catch {
-        const fallbackQr = await generateAppQrDataUrl(window.location.href)
-        setQrDataUrl(fallbackQr)
-        setP2pStatus('WebRTC signaling unavailable; transfer the downloaded .wastickers file via USB/Telegram.')
-      }
+      await startQrP2pForResult(packBlob)
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
       appendLog(`! Error packing .wastickers: ${msg}`)

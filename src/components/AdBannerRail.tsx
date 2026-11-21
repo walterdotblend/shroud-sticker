@@ -71,6 +71,9 @@ function recordBannerStat(bannerId: string, kind: 'impressions' | 'clicks') {
   }
 }
 
+// Central Zylo Ad Server URL (manages Zylo, Sticker Forge [shroud_left / shroud_right], and Cross-Diary)
+const ZYLO_CENTRAL_AD_SERVER = 'https://zylo.stream'
+
 export function AdBannerRail({
   slot,
   lang,
@@ -82,7 +85,45 @@ export function AdBannerRail({
 
   useEffect(() => {
     let cancelled = false
+    const zyloSlot = slot === 'viewer_left' ? 'shroud_left' : 'shroud_right'
+
     async function load() {
+      // 1. Try Zylo Central Ad Panel first (tracks impressions & clicks in Zylo admin)
+      try {
+        const ctrl = new AbortController()
+        const timer = setTimeout(() => ctrl.abort(), 3500)
+        const zRes = await fetch(
+          `${ZYLO_CENTRAL_AD_SERVER}/api/banners/${zyloSlot}?lang=${encodeURIComponent(lang)}`,
+          { signal: ctrl.signal }
+        )
+        clearTimeout(timer)
+        if (zRes.ok) {
+          const zData = await zRes.json()
+          if (zData && zData.found && zData.mediaUrl) {
+            if (!cancelled) {
+              const mediaUrl = zData.mediaUrl.startsWith('http')
+                ? zData.mediaUrl
+                : `${ZYLO_CENTRAL_AD_SERVER}${zData.mediaUrl}`
+              const clickUrl = zData.clickUrl?.startsWith('http')
+                ? zData.clickUrl
+                : `${ZYLO_CENTRAL_AD_SERVER}${zData.clickUrl || ''}`
+              setBanner({
+                id: zData.id,
+                name: zData.name || 'Ad',
+                slot,
+                mediaUrl,
+                mediaType: zData.mediaType,
+                clickUrl: clickUrl || zData.targetUrl || '#',
+              })
+            }
+            return
+          }
+        }
+      } catch {
+        // Fallback to local banners.json
+      }
+
+      // 2. Fallback to local banners.json / localStorage
       try {
         let list: ZyloBannerItem[] = []
         const customRaw = localStorage.getItem('shroud_custom_banners')

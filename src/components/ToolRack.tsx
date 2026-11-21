@@ -6,7 +6,6 @@ import {
   Gauge,
   HelpCircle,
   Link2,
-  Monitor,
   Move,
   QrCode,
   RotateCcw,
@@ -399,7 +398,8 @@ export function ToolRack({
         <div className="export-buttons-grid">
           <button type="button" className="btn-export" disabled={!result || encoding} onClick={onDownload}>
             <div className="export-icons">
-              <Monitor size={15} />
+              <Smartphone size={14} />
+              <span className="os-tag">Android · iOS</span>
             </div>
             <span className="export-label">{t.downloadWebpPc}</span>
           </button>
@@ -419,11 +419,11 @@ export function ToolRack({
         </div>
 
         {qrDataUrl && (
-          <div className="qr-card">
-            <img src={qrDataUrl} alt="P2P QR Code" className="qr-image" />
+          <div className="qr-card qr-card-large">
+            <img src={qrDataUrl} alt="P2P QR Code" className="qr-image-large" />
             <div className="qr-info">
               <div className="qr-title">
-                <QrCode size={13} className="icon-crimson" />
+                <QrCode size={14} className="icon-crimson" />
                 <span>{t.qrTitle}</span>
               </div>
               {p2pStatus && <div className="p2p-status-badge">{p2pStatus}</div>}
@@ -431,8 +431,6 @@ export function ToolRack({
             </div>
           </div>
         )}
-
-        <p className="pc-limitation-box">{t.pcLimitationNote}</p>
 
         <div className="import-guide">
           <div className="import-guide-title">

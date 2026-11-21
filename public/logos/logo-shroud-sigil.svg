@@ -1,0 +1,20 @@
+<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="voidBg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1f090e"/>
+      <stop offset="100%" stop-color="#080608"/>
+    </radialGradient>
+    <linearGradient id="crimsonEdge" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#e6c2c2"/>
+      <stop offset="50%" stop-color="#cc3540"/>
+      <stop offset="100%" stop-color="#5c1017"/>
+    </linearGradient>
+  </defs>
+  <rect x="12" y="12" width="232" height="232" rx="44" fill="url(#voidBg)" stroke="url(#crimsonEdge)" stroke-width="4"/>
+  <!-- Sticker peeled corner effect -->
+  <path d="M188 244 L244 188 L188 188 Z" fill="#8b1922" stroke="#e6c2c2" stroke-width="2"/>
+  <!-- Gothic Crescent & Blade Sigil -->
+  <path d="M128 44 C82 44 52 82 52 128 C52 174 82 212 128 212 C100 194 86 164 86 128 C86 92 100 62 128 44 Z" fill="#cc3540"/>
+  <polygon points="138,56 154,128 138,200 122,128" fill="#e6c2c2"/>
+  <circle cx="138" cy="128" r="10" fill="#080608" stroke="#cc3540" stroke-width="3"/>
+</svg>
