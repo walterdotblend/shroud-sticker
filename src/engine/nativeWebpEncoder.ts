@@ -3,7 +3,6 @@ import { applyAiBgRemovalToCanvas, ensureBgRemoverLoaded } from './bgRemover'
 import {
   computeBaseFitSize,
   computeEffectiveDuration,
-  planAutoCompressSteps,
 } from './ffmpegArgs'
 import type { EngineCallbacks } from './ffmpegClient'
 import type { EncodePassLog, EncodeResult, MediaInfo, StickerSettings } from './types'
@@ -40,12 +39,14 @@ function drawTransformedFrame(
   const drawH = Math.max(4, Math.round(base.height * scale))
 
   const cursed = Math.max(0, Math.min(100, settings.cursedLevel || 0))
+  const lowQualityCrunch = settings.quality <= 20 ? (25 - settings.quality) * 2.5 : 0
+  const effectiveCrunch = Math.max(cursed, lowQualityCrunch)
   let drawSource: CanvasImageSource = source
 
-  if (cursed >= 35) {
-    const factor = Math.max(0.14, 1 - (cursed / 100) * 0.82)
-    const lowW = Math.max(24, Math.round(drawW * factor))
-    const lowH = Math.max(24, Math.round(drawH * factor))
+  if (effectiveCrunch >= 20) {
+    const factor = Math.max(0.12, 1 - (effectiveCrunch / 100) * 0.86)
+    const lowW = Math.max(20, Math.round(drawW * factor))
+    const lowH = Math.max(20, Math.round(drawH * factor))
     const lowCanvas = document.createElement('canvas')
     lowCanvas.width = lowW
     lowCanvas.height = lowH
@@ -145,7 +146,7 @@ async function seekVideo(video: HTMLVideoElement, timeSec: number): Promise<void
 
 async function canvasToWebpBytes(canvas: HTMLCanvasElement, qualityRatio: number): Promise<Uint8Array> {
   const blob = await new Promise<Blob | null>((resolve) =>
-    canvas.toBlob((b) => resolve(b), 'image/webp', Math.max(0.03, Math.min(0.96, qualityRatio)))
+    canvas.toBlob((b) => resolve(b), 'image/webp', Math.max(0.01, Math.min(0.96, qualityRatio)))
   )
   if (!blob || blob.type !== 'image/webp') {
     throw new Error('NATIVE_WEBP_UNSUPPORTED')
@@ -166,7 +167,7 @@ export async function encodeStickerNative(
   callbacks.onLog('> Using Fast Native WebP Muxer (0 MB download, GPU Canvas + C++ libwebp)...')
   callbacks.onProgress(0.06, 'Extracting & rendering 512×512 frames...')
 
-  const maxAllowedFps = Math.max(8, Math.min(30, media.sourceFps || 30))
+  const maxAllowedFps = Math.max(8, Math.min(45, media.sourceFps || 30))
   const baseFps = Math.max(8, Math.min(maxAllowedFps, Math.round(settings.fps)))
   const totalBaseFrames = Math.max(2, Math.min(150, Math.round(effectiveDuration * baseFps)))
   const renderedCanvases: HTMLCanvasElement[] = []
@@ -232,10 +233,6 @@ export async function encodeStickerNative(
     }
   }
 
-  const steps = settings.autoCompressWhatsApp
-    ? planAutoCompressSteps(baseFps, settings.quality)
-    : [{ fps: baseFps, quality: settings.quality, compressionLevel: 1 }]
-
   // Optional 100% local AI background removal per frame (WebGPU / WASM)
   if (settings.removeBg && renderedCanvases.length > 0) {
     const loadedBg = await ensureBgRemoverLoaded(
@@ -256,20 +253,16 @@ export async function encodeStickerNative(
   }
 
   const passLogs: EncodePassLog[] = []
-  let bestBytes: Uint8Array | null = null
-  let bestStep = steps[0]
 
-  for (let passIdx = 0; passIdx < steps.length; passIdx++) {
-    const step = steps[passIdx]
+  // Adaptive 1-3 pass loop: jumps proportionally to hit <= maxBytes fast instead of 5+ tiny steps
+  const encodeAt = async (passNum: number, targetFps: number, targetQ: number) => {
     const effectiveQ =
-      cursed > 0 ? Math.max(3, Math.round(step.quality * (1 - (cursed / 100) * 0.88))) : step.quality
-
-    // Subsample cached canvases if step.fps < baseFps, preserving exact effectiveDuration
-    const stepFrameCount = Math.max(1, Math.round((renderedCanvases.length * step.fps) / baseFps))
+      cursed > 0 ? Math.max(1, Math.round(targetQ * (1 - (cursed / 100) * 0.94))) : Math.max(1, targetQ)
+    const stepFrameCount = Math.max(1, Math.round((renderedCanvases.length * targetFps) / baseFps))
     const frameDurMs = Math.max(20, Math.round((effectiveDuration * 1000) / stepFrameCount))
     const encodedFrames: Array<{ webpBytes: Uint8Array; durationMs: number }> = []
 
-    callbacks.onLog(`> Pass ${passIdx + 1}: fps=${step.fps}, q=${effectiveQ} (${stepFrameCount} frames)`)
+    callbacks.onLog(`> Pass ${passNum}: fps=${targetFps}, q=${effectiveQ} (${stepFrameCount} frames)`)
 
     for (let fi = 0; fi < stepFrameCount; fi++) {
       const srcIdx = Math.min(
@@ -283,28 +276,32 @@ export async function encodeStickerNative(
         const encRatio = (fi + 1) / stepFrameCount
         callbacks.onProgress(
           0.54 + encRatio * 0.42,
-          `[Pass ${passIdx + 1}] Forging WebP frame ${fi + 1}/${stepFrameCount}...`
+          `[Pass ${passNum}] Forging WebP frame ${fi + 1}/${stepFrameCount}...`
         )
       }
     }
 
     const muxed = muxAnimatedWebp(encodedFrames, size, size)
     const sizeKB = (muxed.byteLength / 1024).toFixed(1)
-    passLogs.push({
-      pass: passIdx + 1,
-      fps: step.fps,
-      quality: effectiveQ,
-      sizeBytes: muxed.byteLength,
-    })
+    passLogs.push({ pass: passNum, fps: targetFps, quality: effectiveQ, sizeBytes: muxed.byteLength })
     callbacks.onLog(`  -> Output: ${sizeKB} KB`)
+    return { muxed, fps: targetFps, quality: effectiveQ }
+  }
 
-    bestBytes = muxed
-    bestStep = { ...step, quality: effectiveQ }
-
-    if (!settings.autoCompressWhatsApp || muxed.byteLength <= settings.maxBytes) {
-      break
+  let best = await encodeAt(1, baseFps, settings.quality)
+  if (settings.autoCompressWhatsApp && best.muxed.byteLength > settings.maxBytes) {
+    const ratio1 = settings.maxBytes / best.muxed.byteLength
+    const jumpQ = Math.max(4, Math.min(settings.quality - 10, Math.round(settings.quality * ratio1 * 0.68)))
+    best = await encodeAt(2, baseFps, jumpQ)
+    if (best.muxed.byteLength > settings.maxBytes) {
+      const ratio2 = settings.maxBytes / best.muxed.byteLength
+      const jumpFps = Math.max(8, Math.min(baseFps - 2, Math.round(baseFps * ratio2 * 0.88)))
+      best = await encodeAt(3, jumpFps, 8)
     }
   }
+
+  const bestBytes = best.muxed
+  const bestStep = { fps: best.fps, quality: best.quality }
 
   if (!bestBytes) {
     throw new Error('Failed to generate WebP output')

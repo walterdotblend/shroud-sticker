@@ -3,6 +3,7 @@ import { Eye, Pause, Play, RotateCcw, Scissors } from 'lucide-react'
 import { computeBaseFitSize } from '../engine/ffmpegArgs'
 import type { CanvasBgMode, EncodeResult, MediaInfo } from '../engine/types'
 import type { Translations } from '../i18n/translations'
+import { TrimTimeline } from './TrimTimeline'
 
 interface CropStageProps {
   t: Translations
@@ -20,6 +21,7 @@ interface CropStageProps {
   viewMode: 'source' | 'result'
   onStickerNameChange: (name: string) => void
   onViewModeChange: (mode: 'source' | 'result') => void
+  onTrimChange: (start: number, end: number) => void
   onTransformChange: (patch: {
     canvasScale?: number
     canvasX?: number
@@ -47,6 +49,7 @@ export function CropStage({
   viewMode,
   onStickerNameChange,
   onViewModeChange,
+  onTrimChange,
   onTransformChange,
   onResetTransform,
 }: CropStageProps) {
@@ -289,6 +292,22 @@ export function CropStage({
                 {t.resetCrop}
               </button>
             </div>
+
+            <TrimTimeline
+              t={t}
+              duration={media.duration}
+              trimStart={trimStart}
+              trimEnd={trimEnd}
+              currentTime={currentTime}
+              speed={speed}
+              onTrimChange={onTrimChange}
+              onScrub={(sec) => {
+                setCurrentTime(sec)
+                if (videoRef.current && !media.isGif) {
+                  videoRef.current.currentTime = sec
+                }
+              }}
+            />
           </div>
         )}
       </div>

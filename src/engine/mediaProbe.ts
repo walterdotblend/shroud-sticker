@@ -19,7 +19,7 @@ export async function probeGifMeta(file: File): Promise<{ duration: number; sour
     const sec = totalDelayCs / 100
     const duration = sec > 0.1 ? sec : 3
     const rawFps = Math.round(numFrames / duration)
-    const sourceFps = Math.max(5, Math.min(30, rawFps))
+    const sourceFps = Math.max(5, Math.min(45, rawFps))
     return { duration, sourceFps }
   } catch {
     return { duration: 3, sourceFps: 15 }
@@ -88,7 +88,7 @@ function probeVideoMetadata(
           width,
           height,
           duration,
-          sourceFps: Math.max(8, Math.min(30, Math.round(fps))),
+          sourceFps: Math.max(8, Math.min(45, Math.round(fps))),
         })
       }
 

@@ -1703,3 +1703,76 @@ button:disabled {
   grid-template-columns: 1.2fr 0.8fr;
   gap: 8px;
 }
+
+/* Zylo-style Lossless Trim Timeline below Canvas */
+.trim-timeline-wrap {
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px 8px;
+  background: rgba(12, 8, 11, 0.85);
+  border: 1px solid var(--border-dim);
+  border-radius: 6px;
+}
+
+.trim-timeline-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10.5px;
+  color: var(--text-muted);
+}
+
+.trim-timeline-meta strong {
+  color: var(--bone-rose);
+}
+
+.trim-track {
+  position: relative;
+  height: 18px;
+  background: #171115;
+  border: 1px solid var(--border-dim);
+  border-radius: 4px;
+  cursor: pointer;
+  user-select: none;
+  touch-action: none;
+}
+
+.trim-selection {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgba(181, 43, 53, 0.35);
+  border-top: 2px solid var(--crimson-bright);
+  border-bottom: 2px solid var(--crimson-bright);
+  pointer-events: none;
+}
+
+.trim-playhead {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 2px;
+  background: #fff2f2;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.trim-handle {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 10px;
+  transform: translateX(-50%);
+  background: var(--bone-rose);
+  border: 1.5px solid var(--crimson);
+  border-radius: 3px;
+  cursor: ew-resize;
+  z-index: 4;
+}
+
+.trim-handle:hover {
+  background: #ffffff;
+}

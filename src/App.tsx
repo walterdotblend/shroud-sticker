@@ -560,6 +560,9 @@ export function App() {
               viewMode={viewMode}
               onStickerNameChange={setStickerName}
               onViewModeChange={setViewMode}
+              onTrimChange={(start, end) =>
+                handleSettingsChange({ trimStart: start, trimEnd: end })
+              }
               onTransformChange={(patch) => handleSettingsChange(patch)}
               onResetTransform={() =>
                 handleSettingsChange({ canvasScale: 1, canvasX: 0, canvasY: 0, rotationDeg: 0 })
