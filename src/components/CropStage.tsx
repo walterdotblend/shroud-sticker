@@ -19,6 +19,7 @@ interface CropStageProps {
   speed: number
   result: EncodeResult | null
   viewMode: 'source' | 'result'
+  interactive: boolean
   onStickerNameChange: (name: string) => void
   onViewModeChange: (mode: 'source' | 'result') => void
   onTrimChange: (start: number, end: number) => void
@@ -47,6 +48,7 @@ export function CropStage({
   speed,
   result,
   viewMode,
+  interactive,
   onStickerNameChange,
   onViewModeChange,
   onTrimChange,
@@ -224,10 +226,12 @@ export function CropStage({
           <div className="media-stage-container">
             <div
               ref={canvasBoxRef}
-              className={`sticker-canvas-512 ${canvasBg === 'obsidian' ? 'bg-obsidian' : 'bg-checker'}`}
-              onPointerMove={onPointerMove}
-              onPointerUp={endDrag}
-              onPointerCancel={endDrag}
+              className={`sticker-canvas-512 ${canvasBg === 'obsidian' ? 'bg-obsidian' : 'bg-checker'} ${
+                interactive ? '' : 'canvas-locked'
+              }`}
+              onPointerMove={interactive ? onPointerMove : undefined}
+              onPointerUp={interactive ? endDrag : undefined}
+              onPointerCancel={interactive ? endDrag : undefined}
             >
               <div
                 className="canvas-layer"
@@ -237,8 +241,9 @@ export function CropStage({
                   left: `${50 + (canvasX / 512) * 100}%`,
                   top: `${50 + (canvasY / 512) * 100}%`,
                   transform: `translate(-50%, -50%) rotate(${rotationDeg}deg)`,
+                  cursor: interactive ? 'move' : 'default',
                 }}
-                onPointerDown={(e) => startDrag(e, 'move')}
+                onPointerDown={interactive ? (e) => startDrag(e, 'move') : undefined}
               >
                 {media.isGif ? (
                   <img src={media.objectUrl} alt={media.name} className="canvas-layer-media" draggable={false} />
@@ -254,19 +259,23 @@ export function CropStage({
                   />
                 )}
 
-                {/* Rotation stem & handle */}
-                <div className="rotate-stem" />
-                <div
-                  className="rotate-handle"
-                  onPointerDown={(e) => startDrag(e, 'rotate')}
-                  title="Arrastra para rotar"
-                />
+                {interactive && (
+                  <>
+                    {/* Rotation stem & handle */}
+                    <div className="rotate-stem" />
+                    <div
+                      className="rotate-handle"
+                      onPointerDown={(e) => startDrag(e, 'rotate')}
+                      title="Arrastra para rotar"
+                    />
 
-                {/* 4 corner scale handles */}
-                <div className="crop-handle nw" onPointerDown={(e) => startDrag(e, 'scale')} />
-                <div className="crop-handle ne" onPointerDown={(e) => startDrag(e, 'scale')} />
-                <div className="crop-handle sw" onPointerDown={(e) => startDrag(e, 'scale')} />
-                <div className="crop-handle se" onPointerDown={(e) => startDrag(e, 'scale')} />
+                    {/* 4 corner scale handles */}
+                    <div className="crop-handle nw" onPointerDown={(e) => startDrag(e, 'scale')} />
+                    <div className="crop-handle ne" onPointerDown={(e) => startDrag(e, 'scale')} />
+                    <div className="crop-handle sw" onPointerDown={(e) => startDrag(e, 'scale')} />
+                    <div className="crop-handle se" onPointerDown={(e) => startDrag(e, 'scale')} />
+                  </>
+                )}
               </div>
 
               <span className="canvas-badge-512">
@@ -275,23 +284,25 @@ export function CropStage({
               <div className="canvas-bounds-mask" aria-hidden="true" />
             </div>
 
-            <div className="stage-transport">
-              {!media.isGif && (
-                <>
-                  <button type="button" className="btn-ghost-sm" onClick={togglePlay}>
-                    {playing ? <Pause size={13} /> : <Play size={13} />}
-                    {playing ? t.pause : t.play}
-                  </button>
-                  <span className="transport-time">
-                    {currentTime.toFixed(2)}s / {media.duration.toFixed(2)}s
-                  </span>
-                </>
-              )}
-              <button type="button" className="btn-ghost-sm" onClick={onResetTransform}>
-                <RotateCcw size={12} />
-                {t.resetCrop}
-              </button>
-            </div>
+            {interactive && (
+              <div className="stage-transport">
+                {!media.isGif && (
+                  <>
+                    <button type="button" className="btn-ghost-sm" onClick={togglePlay}>
+                      {playing ? <Pause size={13} /> : <Play size={13} />}
+                      {playing ? t.pause : t.play}
+                    </button>
+                    <span className="transport-time">
+                      {currentTime.toFixed(2)}s / {media.duration.toFixed(2)}s
+                    </span>
+                  </>
+                )}
+                <button type="button" className="btn-ghost-sm" onClick={onResetTransform}>
+                  <RotateCcw size={12} />
+                  {t.resetCrop}
+                </button>
+              </div>
+            )}
 
             <TrimTimeline
               t={t}
@@ -300,7 +311,16 @@ export function CropStage({
               trimEnd={trimEnd}
               currentTime={currentTime}
               speed={speed}
+              isVideo={!media.isGif}
+              playing={playing}
+              onTogglePlay={togglePlay}
               onTrimChange={onTrimChange}
+              onScrubStart={() => {
+                if (videoRef.current && !media.isGif && !videoRef.current.paused) {
+                  videoRef.current.pause()
+                  setPlaying(false)
+                }
+              }}
               onScrub={(sec) => {
                 setCurrentTime(sec)
                 if (videoRef.current && !media.isGif) {

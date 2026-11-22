@@ -1,6 +1,5 @@
 import { useRef, useState } from 'react'
 import {
-  Clock,
   Download,
   Flame,
   Gauge,
@@ -74,7 +73,6 @@ export function ToolRack({
   const [urlInput, setUrlInput] = useState('')
   const [dragOver, setDragOver] = useState(false)
 
-  const maxDur = media ? Math.max(0.5, media.duration) : 10
   const effectiveDuration = computeEffectiveDuration(settings.trimStart, settings.trimEnd, settings.speed)
   const durationTooLong = effectiveDuration > WHATSAPP_MAX_DURATION_SEC
   const maxSourceFps = Math.max(8, Math.min(45, media?.sourceFps ?? 30))
@@ -176,8 +174,8 @@ export function ToolRack({
         <section className="panel">
           <div className="panel-header">
             <div className="panel-title-group">
-              <Clock size={14} className="icon-crimson" />
-              <span className="panel-title">{t.trimSpeedTitle}</span>
+              <Gauge size={14} className="icon-crimson" />
+              <span className="panel-title">{t.speed.replace(':', '')}</span>
             </div>
             <span className={`duration-badge ${durationTooLong ? 'warn' : 'ok'}`}>
               {t.finalDuration} {effectiveDuration.toFixed(2)}s {durationTooLong ? t.max10s : '✓'}
@@ -185,38 +183,6 @@ export function ToolRack({
           </div>
 
           <div className="control-grid">
-            <div className="control-row">
-              <label className="control-label">
-                {t.start} <strong>{settings.trimStart.toFixed(2)}s</strong>
-              </label>
-              <input
-                type="range"
-                min={0}
-                max={Math.max(0.1, settings.trimEnd - 0.1)}
-                step={0.05}
-                value={settings.trimStart}
-                disabled={!media}
-                onChange={(e) => onSettingsChange({ trimStart: Number(e.target.value) })}
-                className="crimson-slider"
-              />
-            </div>
-
-            <div className="control-row">
-              <label className="control-label">
-                {t.end} <strong>{settings.trimEnd.toFixed(2)}s</strong>
-              </label>
-              <input
-                type="range"
-                min={Math.min(maxDur, settings.trimStart + 0.1)}
-                max={maxDur}
-                step={0.05}
-                value={settings.trimEnd}
-                disabled={!media}
-                onChange={(e) => onSettingsChange({ trimEnd: Number(e.target.value) })}
-                className="crimson-slider"
-              />
-            </div>
-
             <div className="control-row">
               <div className="control-label-row">
                 <span className="control-label">

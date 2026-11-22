@@ -1,4 +1,5 @@
 import { useRef } from 'react'
+import { Pause, Play } from 'lucide-react'
 import { computeEffectiveDuration } from '../engine/ffmpegArgs'
 import { WHATSAPP_MAX_DURATION_SEC } from '../engine/types'
 import type { Translations } from '../i18n/translations'
@@ -10,13 +11,17 @@ interface TrimTimelineProps {
   trimEnd: number
   currentTime: number
   speed: number
+  isVideo: boolean
+  playing: boolean
+  onTogglePlay: () => void
   onTrimChange: (start: number, end: number) => void
+  onScrubStart: () => void
   onScrub: (timeSec: number) => void
 }
 
 /**
  * Zylo-style dual-handle trim timeline placed directly below the canvas.
- * Dragging Start or End handles live-seeks the video so you see the exact cut frame.
+ * Pauses the video while dragging Start or End handles and live-seeks to the cut frame.
  */
 export function TrimTimeline({
   t,
@@ -25,7 +30,11 @@ export function TrimTimeline({
   trimEnd,
   currentTime,
   speed,
+  isVideo,
+  playing,
+  onTogglePlay,
   onTrimChange,
+  onScrubStart,
   onScrub,
 }: TrimTimelineProps) {
   const trackRef = useRef<HTMLDivElement>(null)
@@ -51,6 +60,7 @@ export function TrimTimeline({
     e.preventDefault()
     ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
     dragTarget.current = which
+    onScrubStart()
   }
 
   const onPointerMove = (e: React.PointerEvent) => {
@@ -85,34 +95,48 @@ export function TrimTimeline({
         </span>
       </div>
 
-      <div
-        ref={trackRef}
-        className="trim-track"
-        onPointerMove={onPointerMove}
-        onPointerUp={endDrag}
-        onPointerCancel={endDrag}
-        onClick={(e) => {
-          const time = clientXToTime(e.clientX)
-          onScrub(time)
-        }}
-      >
+      <div className="trim-track-row">
+        {isVideo && (
+          <button
+            type="button"
+            className="trim-play-btn"
+            onClick={onTogglePlay}
+            title={playing ? t.pause : t.play}
+            aria-label={playing ? t.pause : t.play}
+          >
+            {playing ? <Pause size={12} /> : <Play size={12} />}
+          </button>
+        )}
+
         <div
-          className="trim-selection"
-          style={{ left: `${startPct}%`, width: `${Math.max(1, endPct - startPct)}%` }}
-        />
-        <div className="trim-playhead" style={{ left: `${playPct}%` }} />
-        <div
-          className="trim-handle trim-handle-start"
-          style={{ left: `${startPct}%` }}
-          onPointerDown={(e) => startDrag(e, 'start')}
-          title="Drag to set start time"
-        />
-        <div
-          className="trim-handle trim-handle-end"
-          style={{ left: `${endPct}%` }}
-          onPointerDown={(e) => startDrag(e, 'end')}
-          title="Drag to set end time"
-        />
+          ref={trackRef}
+          className="trim-track"
+          onPointerMove={onPointerMove}
+          onPointerUp={endDrag}
+          onPointerCancel={endDrag}
+          onClick={(e) => {
+            const time = clientXToTime(e.clientX)
+            onScrub(time)
+          }}
+        >
+          <div
+            className="trim-selection"
+            style={{ left: `${startPct}%`, width: `${Math.max(1, endPct - startPct)}%` }}
+          />
+          <div className="trim-playhead" style={{ left: `${playPct}%` }} />
+          <div
+            className="trim-handle trim-handle-start"
+            style={{ left: `${startPct}%` }}
+            onPointerDown={(e) => startDrag(e, 'start')}
+            title="Drag to set start time"
+          />
+          <div
+            className="trim-handle trim-handle-end"
+            style={{ left: `${endPct}%` }}
+            onPointerDown={(e) => startDrag(e, 'end')}
+            title="Drag to set end time"
+          />
+        </div>
       </div>
     </div>
   )

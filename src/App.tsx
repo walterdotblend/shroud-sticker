@@ -558,6 +558,7 @@ export function App() {
               speed={settings.speed}
               result={result}
               viewMode={viewMode}
+              interactive={step === 2}
               onStickerNameChange={setStickerName}
               onViewModeChange={setViewMode}
               onTrimChange={(start, end) =>

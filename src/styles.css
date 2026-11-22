@@ -1776,3 +1776,37 @@ button:disabled {
 .trim-handle:hover {
   background: #ffffff;
 }
+
+/* Timeline Pause Button Row & Locked Canvas in Forge */
+.trim-track-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.trim-track-row .trim-track {
+  flex: 1;
+}
+
+.trim-play-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 22px;
+  background: #181115;
+  border: 1px solid var(--border-crimson);
+  border-radius: 4px;
+  color: var(--bone-rose);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.trim-play-btn:hover {
+  border-color: var(--bone-rose);
+  background: rgba(158, 31, 40, 0.25);
+}
+
+.canvas-locked .canvas-layer {
+  border-color: transparent;
+}
