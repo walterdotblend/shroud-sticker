@@ -30,7 +30,7 @@ function probeImageDimensions(objectUrl: string): Promise<{ width: number; heigh
   return new Promise((resolve, reject) => {
     const img = new Image()
     img.onload = () => resolve({ width: img.naturalWidth || 512, height: img.naturalHeight || 512 })
-    img.onerror = () => reject(new Error('No se pudo leer las dimensiones del GIF/imagen.'))
+    img.onerror = () => reject(new Error('Could not read GIF/image dimensions.'))
     img.src = objectUrl
   })
 }
@@ -126,7 +126,7 @@ function probeVideoMetadata(
 
     video.onerror = () => {
       cleanup()
-      reject(new Error('No se pudo cargar el video en el navegador.'))
+      reject(new Error('Could not load video in the browser.'))
     }
     video.src = objectUrl
   })
