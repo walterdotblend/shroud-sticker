@@ -224,15 +224,16 @@ export function CropStage({
           </div>
         ) : (
           <div className="media-stage-container">
-            <div
-              ref={canvasBoxRef}
-              className={`sticker-canvas-512 ${canvasBg === 'obsidian' ? 'bg-obsidian' : 'bg-checker'} ${
-                interactive ? '' : 'canvas-locked'
-              }`}
-              onPointerMove={interactive ? onPointerMove : undefined}
-              onPointerUp={interactive ? endDrag : undefined}
-              onPointerCancel={interactive ? endDrag : undefined}
-            >
+            <div className="canvas-clip-arena">
+              <div
+                ref={canvasBoxRef}
+                className={`sticker-canvas-512 ${canvasBg === 'obsidian' ? 'bg-obsidian' : 'bg-checker'} ${
+                  interactive ? '' : 'canvas-locked'
+                }`}
+                onPointerMove={interactive ? onPointerMove : undefined}
+                onPointerUp={interactive ? endDrag : undefined}
+                onPointerCancel={interactive ? endDrag : undefined}
+              >
               <div
                 className="canvas-layer"
                 style={{
@@ -282,6 +283,7 @@ export function CropStage({
                 512×512 · {Math.round(canvasScale * 100)}% · {rotationDeg}°
               </span>
               <div className="canvas-bounds-mask" aria-hidden="true" />
+            </div>
             </div>
 
             {interactive && (

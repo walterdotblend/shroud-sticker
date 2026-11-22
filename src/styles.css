@@ -1810,3 +1810,21 @@ button:disabled {
 .canvas-locked .canvas-layer {
   border-color: transparent;
 }
+
+/* Isolate scaled canvas overflow so transport & timeline controls are ALWAYS visible */
+.canvas-clip-arena {
+  position: relative;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 28px 0;
+  overflow: hidden;
+  border-radius: 6px;
+}
+
+.stage-transport,
+.trim-timeline-wrap {
+  position: relative;
+  z-index: 12;
+}

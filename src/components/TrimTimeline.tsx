@@ -38,7 +38,7 @@ export function TrimTimeline({
   onScrub,
 }: TrimTimelineProps) {
   const trackRef = useRef<HTMLDivElement>(null)
-  const dragTarget = useRef<'start' | 'end' | null>(null)
+  const dragTarget = useRef<'start' | 'end' | 'playhead' | null>(null)
 
   const safeDur = Math.max(0.2, duration)
   const startPct = Math.max(0, Math.min(100, (trimStart / safeDur) * 100))
@@ -55,18 +55,23 @@ export function TrimTimeline({
     return Number((ratio * safeDur).toFixed(2))
   }
 
-  const startDrag = (e: React.PointerEvent, which: 'start' | 'end') => {
+  const startDrag = (e: React.PointerEvent, which: 'start' | 'end' | 'playhead') => {
     e.stopPropagation()
     e.preventDefault()
     ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
     dragTarget.current = which
     onScrubStart()
+    if (which === 'playhead') {
+      onScrub(clientXToTime(e.clientX))
+    }
   }
 
   const onPointerMove = (e: React.PointerEvent) => {
     if (!dragTarget.current) return
     const time = clientXToTime(e.clientX)
-    if (dragTarget.current === 'start') {
+    if (dragTarget.current === 'playhead') {
+      onScrub(time)
+    } else if (dragTarget.current === 'start') {
       const nextStart = Math.max(0, Math.min(trimEnd - 0.15, time))
       onTrimChange(Number(nextStart.toFixed(2)), trimEnd)
       onScrub(nextStart)
@@ -111,13 +116,10 @@ export function TrimTimeline({
         <div
           ref={trackRef}
           className="trim-track"
+          onPointerDown={(e) => startDrag(e, 'playhead')}
           onPointerMove={onPointerMove}
           onPointerUp={endDrag}
           onPointerCancel={endDrag}
-          onClick={(e) => {
-            const time = clientXToTime(e.clientX)
-            onScrub(time)
-          }}
         >
           <div
             className="trim-selection"
