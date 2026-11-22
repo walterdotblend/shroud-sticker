@@ -1828,3 +1828,19 @@ button:disabled {
   position: relative;
   z-index: 12;
 }
+
+/* Official SHROUD Sigil Logo */
+.brand-sigil-img {
+  width: 18px;
+  height: 18px;
+  display: block;
+  flex-shrink: 0;
+}
+
+.stage-empty-sigil {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 12px;
+  display: block;
+  filter: drop-shadow(0 0 18px rgba(204, 53, 64, 0.45));
+}

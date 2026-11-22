@@ -200,9 +200,11 @@ export function CropStage({
       <div className="stage-viewport">
         {!media ? (
           <div className="stage-empty">
-            <div className="eerie-sigil" aria-hidden="true">
-              ☽ ✦ ☾
-            </div>
+            <img
+              src={`${import.meta.env.BASE_URL}logos/logo-shroud-sigil.svg`}
+              alt="SHROUD Sigil"
+              className="stage-empty-sigil"
+            />
             <p className="stage-empty-title">{t.emptyTitle}</p>
             <p className="stage-empty-sub">{t.emptySub}</p>
           </div>

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Download, Globe, Share2, ShieldCheck, Skull, Smartphone, Terminal } from 'lucide-react'
+import { Download, Globe, Share2, ShieldCheck, Smartphone, Terminal } from 'lucide-react'
 import { AdBannerRail } from './components/AdBannerRail'
 import { BloodBackdrop } from './components/backdrop/BloodBackdrop'
 import { CropStage } from './components/CropStage'
@@ -113,6 +113,24 @@ export function App() {
   const appendLog = useCallback((line: string) => {
     setLogs((prev) => [...prev.slice(-80), line])
   }, [])
+
+  // Non-blocking visit telemetry to Zylo Central Panel (once per session)
+  useEffect(() => {
+    if (incomingPeerId) return
+    try {
+      if (sessionStorage.getItem('shroud_visit_sent')) return
+      sessionStorage.setItem('shroud_visit_sent', '1')
+      const isNew = !localStorage.getItem('shroud_seen_before')
+      localStorage.setItem('shroud_seen_before', '1')
+      fetch('https://zylo.stream/api/stats/visit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'shroud', isNew }),
+      }).catch(() => {})
+    } catch {
+      // ignore
+    }
+  }, [incomingPeerId])
 
   useEffect(() => {
     logEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -251,6 +269,11 @@ export function App() {
       const kb = (encoded.sizeBytes / 1024).toFixed(1)
       setStatusText(`${t.forgedStatus} · ${kb} KB (${encoded.fpsUsed}fps, q${encoded.qualityUsed})`)
       appendLog(`> ✓ Ready: ${kb} KB | ${encoded.width}×${encoded.height} | ${encoded.durationSec.toFixed(2)}s`)
+      fetch('https://zylo.stream/api/stats/visit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'shroud_forge', isNew: false }),
+      }).catch(() => {})
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
       setStatusText(`Error: ${msg}`)
@@ -438,7 +461,11 @@ export function App() {
       <header className="topbar">
         <div className="topbar-left">
           <div className="brand-pill">
-            <Skull size={14} className="icon-crimson" />
+            <img
+              src={`${import.meta.env.BASE_URL}logos/logo-shroud-sigil.svg`}
+              alt="SHROUD Sigil"
+              className="brand-sigil-img"
+            />
             <span className="brand-name">{t.appTitle}</span>
           </div>
           <span className="status-pill">
