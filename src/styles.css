@@ -1845,43 +1845,62 @@ button:disabled {
   filter: drop-shadow(0 0 18px rgba(204, 53, 64, 0.45));
 }
 
-/* Mirror Toggle Button between Scale & Rotation Vials */
+/* Gothic Blood Mirror Button between Scale & Rotation Vials */
 .mirror-control-col {
   justify-content: flex-end;
 }
 
-.mirror-vial-btn {
+.mirror-vial-btn.gothic-blood-mirror {
+  position: relative;
   width: 44px;
   height: 112px;
-  border-radius: 14px;
+  padding: 5px;
+  border-radius: 22px 22px 10px 10px;
   border: 1.5px solid var(--border-crimson);
-  background: rgba(12, 8, 11, 0.92);
-  color: var(--bone-muted);
+  background: radial-gradient(circle at 50% 35%, #1d0c11 0%, #090608 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  overflow: hidden;
   box-shadow:
-    inset 0 0 12px rgba(0, 0, 0, 0.85),
-    0 4px 14px rgba(0, 0, 0, 0.45);
-  transition: border-color 0.15s, background 0.15s, color 0.15s, box-shadow 0.15s;
+    inset 0 0 12px rgba(0, 0, 0, 0.9),
+    0 4px 14px rgba(0, 0, 0, 0.5);
+  transition: border-color 0.18s, transform 0.18s, box-shadow 0.2s;
 }
 
-.mirror-vial-btn:hover {
+.mirror-vial-btn.gothic-blood-mirror:hover {
   border-color: var(--bone-rose);
-  color: var(--bone-rose);
+  transform: translateY(-1px);
 }
 
-.mirror-vial-btn.active {
-  border-color: var(--bone-rose);
-  background: linear-gradient(180deg, rgba(181, 43, 53, 0.45) 0%, rgba(92, 16, 23, 0.72) 100%);
-  color: #fff2f2;
+.mirror-vial-btn.gothic-blood-mirror.active {
+  border-color: #ffe4e6;
   box-shadow:
-    inset 0 0 14px rgba(204, 53, 64, 0.45),
-    0 0 14px rgba(204, 53, 64, 0.45);
+    inset 0 0 18px rgba(204, 53, 64, 0.55),
+    0 0 16px rgba(204, 53, 64, 0.55);
 }
 
-/* Canvas Square + Horizontal & Vertical Circular Sawblade Sliders */
+.mirror-arch-frame {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.mirror-vial-btn.gothic-blood-mirror.active .mirror-arch-frame {
+  transform: scaleX(-1);
+}
+
+.mirror-arch-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Canvas Square + Infinite Side-View Sawblade Jog Wheels */
 .canvas-with-saw-sliders {
   display: grid;
   grid-template-columns: minmax(0, 320px);
@@ -1896,100 +1915,79 @@ button:disabled {
   grid-template-rows: auto 26px;
 }
 
-.saw-axis-slider {
+.saw-jog-wheel {
   position: relative;
+  overflow: hidden;
+  background: #090608;
+  border: 1px solid var(--border-crimson);
+  border-radius: 6px;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.95);
   user-select: none;
   touch-action: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   z-index: 14;
 }
 
-.saw-axis-y {
+.saw-jog-y {
   width: 24px;
   height: 300px;
+  cursor: ns-resize;
 }
 
-.saw-axis-x {
+.saw-jog-x {
   width: 300px;
   height: 24px;
   justify-self: center;
+  cursor: ew-resize;
 }
 
-.saw-axis-groove {
-  position: absolute;
-  background: #130d11;
-  border: 1px solid var(--border-crimson);
-  border-radius: 999px;
-  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.9);
+.saw-jog-wheel:hover {
+  border-color: var(--bone-rose);
 }
 
-.saw-axis-y .saw-axis-groove {
-  top: 6px;
-  bottom: 6px;
-  width: 6px;
-}
-
-.saw-axis-x .saw-axis-groove {
-  left: 6px;
-  right: 6px;
-  height: 6px;
-}
-
-.saw-axis-center-tick {
-  position: absolute;
-  background: var(--bone-rose);
-  opacity: 0.55;
-  pointer-events: none;
-}
-
-.saw-axis-y .saw-axis-center-tick {
-  top: 50%;
-  width: 14px;
-  height: 1.5px;
-  transform: translateY(-50%);
-}
-
-.saw-axis-x .saw-axis-center-tick {
-  left: 50%;
-  height: 14px;
-  width: 1.5px;
-  transform: translateX(-50%);
-}
-
-.saw-axis-thumb {
-  position: absolute;
-  width: 22px;
-  height: 22px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-  filter: drop-shadow(0 0 6px rgba(204, 53, 64, 0.7));
-}
-
-.saw-axis-y .saw-axis-thumb {
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-
-.saw-axis-x .saw-axis-thumb {
-  top: 50%;
-  transform: translate(-50%, -50%);
-}
-
-.sawblade-svg {
-  width: 22px;
-  height: 22px;
+.side-saw-svg {
   display: block;
-  transition: transform 0.05s linear;
+  pointer-events: none;
+  will-change: transform;
 }
 
-.saw-axis-slider:hover .sawblade-svg path {
-  fill: #e84552;
-  stroke: #ffffff;
+.side-saw-svg.vertical {
+  width: 24px;
+  height: 384px;
+}
+
+.side-saw-svg.horizontal {
+  width: 384px;
+  height: 24px;
+}
+
+.saw-jog-wheel:hover .side-saw-svg path:first-child {
+  fill: #b8202c;
+}
+
+.saw-jog-sheen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.saw-jog-sheen.vertical {
+  background: linear-gradient(
+    to bottom,
+    rgba(8, 6, 8, 0.92) 0%,
+    rgba(8, 6, 8, 0) 22%,
+    rgba(8, 6, 8, 0) 78%,
+    rgba(8, 6, 8, 0.92) 100%
+  );
+}
+
+.saw-jog-sheen.horizontal {
+  background: linear-gradient(
+    to right,
+    rgba(8, 6, 8, 0.92) 0%,
+    rgba(8, 6, 8, 0) 22%,
+    rgba(8, 6, 8, 0) 78%,
+    rgba(8, 6, 8, 0.92) 100%
+  );
 }
 
 .saw-axis-corner-reset {

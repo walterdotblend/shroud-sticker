@@ -2,7 +2,6 @@ import { useRef, useState } from 'react'
 import {
   Download,
   Flame,
-  FlipHorizontal2,
   Gauge,
   HelpCircle,
   Link2,
@@ -266,12 +265,56 @@ export function ToolRack({
             <div className="vial-control mirror-control-col">
               <button
                 type="button"
-                className={`mirror-vial-btn ${settings.flipH ? 'active' : ''}`}
+                className={`mirror-vial-btn gothic-blood-mirror ${settings.flipH ? 'active' : ''}`}
                 onClick={() => onSettingsChange({ flipH: !settings.flipH })}
                 title={t.mirrorHint}
                 aria-pressed={settings.flipH}
               >
-                <FlipHorizontal2 size={20} />
+                <span className="mirror-arch-frame" aria-hidden="true">
+                  <svg viewBox="0 0 36 86" className="mirror-arch-svg">
+                    <defs>
+                      <linearGradient id="mirrorGlass" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor={settings.flipH ? '#ff5f6d' : '#3a2228'} stopOpacity="0.85" />
+                        <stop offset="50%" stopColor={settings.flipH ? '#8b1922' : '#160d11'} stopOpacity="0.95" />
+                        <stop offset="100%" stopColor="#090608" stopOpacity="1" />
+                      </linearGradient>
+                    </defs>
+                    {/* Gothic pointed arch mirror */}
+                    <path
+                      d="M18 4 C29 14 32 26 32 42 L32 80 L4 80 L4 42 C4 26 7 14 18 4 Z"
+                      fill="url(#mirrorGlass)"
+                      stroke={settings.flipH ? '#ffe4e6' : '#7a3b42'}
+                      strokeWidth="1.6"
+                    />
+                    {/* Symmetry axis line */}
+                    <line
+                      x1="18"
+                      y1="8"
+                      x2="18"
+                      y2="77"
+                      stroke={settings.flipH ? '#ffd1d6' : '#8f8285'}
+                      strokeWidth="1.1"
+                      strokeDasharray="3 2"
+                    />
+                    {/* Twin reflected crescent fangs */}
+                    <path
+                      d="M14 28 C10 34 10 46 14 52"
+                      fill="none"
+                      stroke={settings.flipH ? '#ffffff' : '#c29b9d'}
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                    />
+                    <path
+                      d="M22 28 C26 34 26 46 22 52"
+                      fill="none"
+                      stroke={settings.flipH ? '#ff7b88' : '#7a3b42'}
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                    />
+                    {/* Glass glint */}
+                    <line x1="9" y1="20" x2="15" y2="12" stroke="rgba(255,255,255,0.45)" strokeWidth="1.2" strokeLinecap="round" />
+                  </svg>
+                </span>
               </button>
               <div className="vial-meta">
                 <span className="vial-label">{t.mirrorLabel}</span>

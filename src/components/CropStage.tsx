@@ -36,30 +36,58 @@ interface CropStageProps {
 
 type DragAction = 'move' | 'scale' | 'rotate' | 'axisX' | 'axisY' | null
 
-const AXIS_LIMIT = 260
-
 /**
- * Gothic circular sawblade SVG thumb for the horizontal and vertical axis sliders.
- * Rotates dynamically as the slider position changes.
+ * Infinite side-view circular sawblade jog wheel SVG.
+ * Renders only the jagged teeth peeking out of a recessed slot; translating
+ * the repeating tooth pattern modulo the tooth pitch (24px) creates seamless
+ * endless rotation whenever the wheel or the video canvas is moved.
  */
-function SawbladeThumbSvg({ angleDeg }: { angleDeg: number }) {
+function SideSawTeeth({
+  orientation,
+  offsetPx,
+}: {
+  orientation: 'vertical' | 'horizontal'
+  offsetPx: number
+}) {
+  const pitch = 24
+  const shift = ((offsetPx % pitch) + pitch) % pitch - pitch
+  const count = 16 // 16 * 24 = 384px (> 300px track)
+
+  if (orientation === 'vertical') {
+    const teeth = Array.from({ length: count }, (_, i) => {
+      const y = i * pitch
+      return `M22,${y} L4,${y + 6} L12,${y + 13} L22,${y + 18} L22,${y + 24}`
+    }).join(' ')
+
+    return (
+      <svg
+        className="side-saw-svg vertical"
+        viewBox={`0 0 24 ${count * pitch}`}
+        preserveAspectRatio="none"
+        style={{ transform: `translateY(${shift}px)` }}
+        aria-hidden="true"
+      >
+        <path d={`${teeth} L24,${count * pitch} L24,0 Z`} fill="#8b1922" />
+        <path d={teeth} fill="none" stroke="#e6c2c2" strokeWidth="1.2" strokeLinejoin="miter" />
+      </svg>
+    )
+  }
+
+  const teeth = Array.from({ length: count }, (_, i) => {
+    const x = i * pitch
+    return `M${x},22 L${x + 6},4 L${x + 13},12 L${x + 18},22 L${x + 24},22`
+  }).join(' ')
+
   return (
     <svg
-      viewBox="0 0 32 32"
-      className="sawblade-svg"
-      style={{ transform: `rotate(${angleDeg}deg)` }}
+      className="side-saw-svg horizontal"
+      viewBox={`0 0 ${count * pitch} 24`}
+      preserveAspectRatio="none"
+      style={{ transform: `translateX(${shift}px)` }}
       aria-hidden="true"
     >
-      {/* 12-tooth circular sawblade outer path */}
-      <path
-        d="M16 1 L18.8 5.4 L23.5 3 L23.4 8.2 L28.9 8.5 L26.3 13.1 L31 16 L26.6 18.8 L29 23.5 L23.8 23.4 L23.5 28.9 L18.9 26.3 L16 31 L13.2 26.6 L8.5 29 L8.6 23.8 L3.1 23.5 L5.7 18.9 L1 16 L5.4 13.2 L3 8.5 L8.2 8.6 L8.5 3.1 L13.1 5.7 Z"
-        fill="#cc3540"
-        stroke="#e6c2c2"
-        strokeWidth="1.2"
-        strokeLinejoin="round"
-      />
-      <circle cx="16" cy="16" r="7.5" fill="#160c10" stroke="#e6c2c2" strokeWidth="1" />
-      <circle cx="16" cy="16" r="3" fill="#080608" stroke="#cc3540" strokeWidth="1.3" />
+      <path d={`${teeth} L${count * pitch},24 L0,24 Z`} fill="#8b1922" />
+      <path d={teeth} fill="none" stroke="#e6c2c2" strokeWidth="1.2" strokeLinejoin="miter" />
     </svg>
   )
 }
@@ -86,8 +114,6 @@ export function CropStage({
   onTransformChange,
 }: CropStageProps) {
   const canvasBoxRef = useRef<HTMLDivElement>(null)
-  const axisXTrackRef = useRef<HTMLDivElement>(null)
-  const axisYTrackRef = useRef<HTMLDivElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const [playing, setPlaying] = useState(true)
   const [currentTime, setCurrentTime] = useState(0)
@@ -256,26 +282,6 @@ export function CropStage({
     dragRef.current = null
   }
 
-  // Sawblade Axis Sliders (Horizontal X and Vertical Y)
-  const updateAxisXFromClient = (clientX: number) => {
-    const rect = axisXTrackRef.current?.getBoundingClientRect()
-    if (!rect || rect.width <= 0) return
-    const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
-    const val = Math.round((ratio * 2 - 1) * AXIS_LIMIT)
-    onTransformChange({ canvasX: Math.abs(val) <= 3 ? 0 : val })
-  }
-
-  const updateAxisYFromClient = (clientY: number) => {
-    const rect = axisYTrackRef.current?.getBoundingClientRect()
-    if (!rect || rect.height <= 0) return
-    const ratio = Math.max(0, Math.min(1, (clientY - rect.top) / rect.height))
-    const val = Math.round((ratio * 2 - 1) * AXIS_LIMIT)
-    onTransformChange({ canvasY: Math.abs(val) <= 3 ? 0 : val })
-  }
-
-  const axisXPct = Math.max(0, Math.min(100, ((canvasX + AXIS_LIMIT) / (AXIS_LIMIT * 2)) * 100))
-  const axisYPct = Math.max(0, Math.min(100, ((canvasY + AXIS_LIMIT) / (AXIS_LIMIT * 2)) * 100))
-
   return (
     <div className="panel stage-panel">
       <div className="panel-header">
@@ -412,12 +418,16 @@ export function CropStage({
 
               {interactive && (
                 <>
-                  {/* Vertical Sawblade Slider (Right side of canvas square) */}
+                  {/* Infinite Vertical Side-View Sawblade Jog Wheel (Right side of canvas) */}
                   <div
-                    ref={axisYTrackRef}
-                    className="saw-axis-slider saw-axis-y"
+                    className="saw-jog-wheel saw-jog-y"
                     title={`${t.panYHint} (Y: ${canvasY}px)`}
                     onDoubleClick={() => onTransformChange({ canvasY: 0 })}
+                    onWheel={(e) => {
+                      e.preventDefault()
+                      const step = e.deltaY > 0 ? 12 : -12
+                      onTransformChange({ canvasY: canvasY + step })
+                    }}
                     onPointerDown={(e) => {
                       e.preventDefault()
                       ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
@@ -432,29 +442,32 @@ export function CropStage({
                         centerY: 0,
                         startDist: 0,
                       }
-                      updateAxisYFromClient(e.clientY)
                     }}
                     onPointerMove={(e) => {
-                      if (dragRef.current?.action === 'axisY') {
-                        updateAxisYFromClient(e.clientY)
+                      const d = dragRef.current
+                      if (d?.action === 'axisY') {
+                        const dy = Math.round((e.clientY - d.startClientY) * 1.4)
+                        onTransformChange({ canvasY: d.startY + dy })
                       }
                     }}
                     onPointerUp={endDrag}
                     onPointerCancel={endDrag}
                   >
-                    <div className="saw-axis-groove" />
-                    <div className="saw-axis-center-tick" />
-                    <div className="saw-axis-thumb" style={{ top: `${axisYPct}%` }}>
-                      <SawbladeThumbSvg angleDeg={canvasY * 2.2} />
-                    </div>
+                    <SideSawTeeth orientation="vertical" offsetPx={canvasY} />
+                    <div className="saw-jog-sheen vertical" aria-hidden="true" />
                   </div>
 
-                  {/* Horizontal Sawblade Slider (Below canvas square) */}
+                  {/* Infinite Horizontal Side-View Sawblade Jog Wheel (Below canvas) */}
                   <div
-                    ref={axisXTrackRef}
-                    className="saw-axis-slider saw-axis-x"
+                    className="saw-jog-wheel saw-jog-x"
                     title={`${t.panXHint} (X: ${canvasX}px)`}
                     onDoubleClick={() => onTransformChange({ canvasX: 0 })}
+                    onWheel={(e) => {
+                      e.preventDefault()
+                      const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY
+                      const step = delta > 0 ? 12 : -12
+                      onTransformChange({ canvasX: canvasX + step })
+                    }}
                     onPointerDown={(e) => {
                       e.preventDefault()
                       ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
@@ -469,21 +482,19 @@ export function CropStage({
                         centerY: 0,
                         startDist: 0,
                       }
-                      updateAxisXFromClient(e.clientX)
                     }}
                     onPointerMove={(e) => {
-                      if (dragRef.current?.action === 'axisX') {
-                        updateAxisXFromClient(e.clientX)
+                      const d = dragRef.current
+                      if (d?.action === 'axisX') {
+                        const dx = Math.round((e.clientX - d.startClientX) * 1.4)
+                        onTransformChange({ canvasX: d.startX + dx })
                       }
                     }}
                     onPointerUp={endDrag}
                     onPointerCancel={endDrag}
                   >
-                    <div className="saw-axis-groove" />
-                    <div className="saw-axis-center-tick" />
-                    <div className="saw-axis-thumb" style={{ left: `${axisXPct}%` }}>
-                      <SawbladeThumbSvg angleDeg={canvasX * 2.2} />
-                    </div>
+                    <SideSawTeeth orientation="horizontal" offsetPx={canvasX} />
+                    <div className="saw-jog-sheen horizontal" aria-hidden="true" />
                   </div>
 
                   {/* Intersection Corner Reset (0,0) */}
