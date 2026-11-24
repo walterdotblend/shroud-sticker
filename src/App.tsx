@@ -7,6 +7,7 @@ import { PackSidebar } from './components/PackSidebar'
 import { ToolRack, type WizardStep } from './components/ToolRack'
 import { stickerEngine } from './engine/ffmpegClient'
 import { probeMediaFile } from './engine/mediaProbe'
+import { loadSavedPackState, savePackState } from './engine/packStorage'
 import {
   receiveP2pStickerFromHost,
   startP2pStickerHost,
@@ -47,6 +48,7 @@ const INITIAL_SETTINGS: StickerSettings = {
   canvasX: 0,
   canvasY: 0,
   rotationDeg: 0,
+  flipH: false,
   targetSize: WHATSAPP_STICKER_SIZE,
   fps: 15,
   quality: 75,
@@ -81,6 +83,7 @@ export function App() {
   const [stickerName, setStickerName] = useState<string>('sticker')
   const [packName, setPackName] = useState<string>('SHROUD Pack')
   const [packItems, setPackItems] = useState<PackStickerItem[]>([])
+  const [packLoaded, setPackLoaded] = useState<boolean>(false)
   const [packError, setPackError] = useState<string | null>(null)
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
   const [p2pStatus, setP2pStatus] = useState<string | null>(null)
@@ -113,6 +116,35 @@ export function App() {
   const appendLog = useCallback((line: string) => {
     setLogs((prev) => [...prev.slice(-80), line])
   }, [])
+
+  // Restore saved sticker pack from IndexedDB on initial mount
+  useEffect(() => {
+    let cancelled = false
+    loadSavedPackState()
+      .then((saved) => {
+        if (cancelled) return
+        if (saved) {
+          setPackName(saved.packName || 'SHROUD Pack')
+          if (saved.items.length > 0) {
+            setPackItems(saved.items)
+            appendLog(`> Restored saved sticker pack "${saved.packName}" (${saved.items.length}/30 stickers).`)
+          }
+        }
+        setPackLoaded(true)
+      })
+      .catch(() => {
+        if (!cancelled) setPackLoaded(true)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [appendLog])
+
+  // Persist sticker pack changes to IndexedDB automatically
+  useEffect(() => {
+    if (!packLoaded) return
+    savePackState(packName, packItems)
+  }, [packLoaded, packName, packItems])
 
   // Non-blocking visit telemetry to Zylo Central Panel (once per session)
   useEffect(() => {
@@ -198,6 +230,7 @@ export function App() {
         canvasX: 0,
         canvasY: 0,
         rotationDeg: 0,
+        flipH: false,
         fps: Math.min(15, info.sourceFps),
         cursedLevel: 0,
       }))
@@ -476,9 +509,9 @@ export function App() {
 
         <div className="topbar-right">
           <span className="spec-pill">{t.specBadge}</span>
-          <label className="lang-pill" title="Language / Idioma">
+          <label className="lang-pill" title={t.langLabel}>
             <Globe size={13} className="icon-crimson" />
-            <span className="lang-prefix">Idioma:</span>
+            <span className="lang-prefix">{t.langLabel}</span>
             <select
               aria-label="Language"
               value={lang}
@@ -580,6 +613,7 @@ export function App() {
               canvasX={settings.canvasX}
               canvasY={settings.canvasY}
               rotationDeg={settings.rotationDeg}
+              flipH={settings.flipH}
               trimStart={settings.trimStart}
               trimEnd={settings.trimEnd}
               speed={settings.speed}
@@ -593,7 +627,7 @@ export function App() {
               }
               onTransformChange={(patch) => handleSettingsChange(patch)}
               onResetTransform={() =>
-                handleSettingsChange({ canvasScale: 1, canvasX: 0, canvasY: 0, rotationDeg: 0 })
+                handleSettingsChange({ canvasScale: 1, canvasX: 0, canvasY: 0, rotationDeg: 0, flipH: false })
               }
             />
           )}

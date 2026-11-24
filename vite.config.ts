@@ -7,8 +7,13 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['@ffmpeg/ffmpeg', '@ffmpeg/util'],
   },
+  esbuild: {
+    drop: ['debugger'],
+    legalComments: 'none',
+  },
   build: {
     outDir: 'dist',
     sourcemap: false,
+    minify: 'esbuild',
   },
 })

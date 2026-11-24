@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
-import { Eye, Pause, Play, RotateCcw, Scissors } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Eye, Scissors } from 'lucide-react'
 import { computeBaseFitSize } from '../engine/ffmpegArgs'
 import type { CanvasBgMode, EncodeResult, MediaInfo } from '../engine/types'
 import type { Translations } from '../i18n/translations'
@@ -14,6 +14,7 @@ interface CropStageProps {
   canvasX: number
   canvasY: number
   rotationDeg: number
+  flipH: boolean
   trimStart: number
   trimEnd: number
   speed: number
@@ -28,11 +29,40 @@ interface CropStageProps {
     canvasX?: number
     canvasY?: number
     rotationDeg?: number
+    flipH?: boolean
   }) => void
   onResetTransform: () => void
 }
 
-type DragAction = 'move' | 'scale' | 'rotate' | null
+type DragAction = 'move' | 'scale' | 'rotate' | 'axisX' | 'axisY' | null
+
+const AXIS_LIMIT = 260
+
+/**
+ * Gothic circular sawblade SVG thumb for the horizontal and vertical axis sliders.
+ * Rotates dynamically as the slider position changes.
+ */
+function SawbladeThumbSvg({ angleDeg }: { angleDeg: number }) {
+  return (
+    <svg
+      viewBox="0 0 32 32"
+      className="sawblade-svg"
+      style={{ transform: `rotate(${angleDeg}deg)` }}
+      aria-hidden="true"
+    >
+      {/* 12-tooth circular sawblade outer path */}
+      <path
+        d="M16 1 L18.8 5.4 L23.5 3 L23.4 8.2 L28.9 8.5 L26.3 13.1 L31 16 L26.6 18.8 L29 23.5 L23.8 23.4 L23.5 28.9 L18.9 26.3 L16 31 L13.2 26.6 L8.5 29 L8.6 23.8 L3.1 23.5 L5.7 18.9 L1 16 L5.4 13.2 L3 8.5 L8.2 8.6 L8.5 3.1 L13.1 5.7 Z"
+        fill="#cc3540"
+        stroke="#e6c2c2"
+        strokeWidth="1.2"
+        strokeLinejoin="round"
+      />
+      <circle cx="16" cy="16" r="7.5" fill="#160c10" stroke="#e6c2c2" strokeWidth="1" />
+      <circle cx="16" cy="16" r="3" fill="#080608" stroke="#cc3540" strokeWidth="1.3" />
+    </svg>
+  )
+}
 
 export function CropStage({
   t,
@@ -43,6 +73,7 @@ export function CropStage({
   canvasX,
   canvasY,
   rotationDeg,
+  flipH,
   trimStart,
   trimEnd,
   speed,
@@ -53,12 +84,19 @@ export function CropStage({
   onViewModeChange,
   onTrimChange,
   onTransformChange,
-  onResetTransform,
 }: CropStageProps) {
   const canvasBoxRef = useRef<HTMLDivElement>(null)
+  const axisXTrackRef = useRef<HTMLDivElement>(null)
+  const axisYTrackRef = useRef<HTMLDivElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const [playing, setPlaying] = useState(true)
   const [currentTime, setCurrentTime] = useState(0)
+
+  // Non-canceling frame-locked seek queue for ultra-fluid scrubbing
+  const isSeekingRef = useRef(false)
+  const pendingSeekTimeRef = useRef<number | null>(null)
+  const isScrubbingRef = useRef(false)
+  const wasPlayingBeforeScrubRef = useRef(true)
 
   const dragRef = useRef<{
     action: DragAction
@@ -78,23 +116,79 @@ export function CropStage({
     v.playbackRate = Math.max(0.1, Math.min(8, speed))
   }, [speed, media])
 
+  // Frame-locked seek executor: waits for each frame decode to paint before seeking to the next latest pointer time
+  const queueFluidVideoSeek = useCallback(
+    (targetSec: number) => {
+      const v = videoRef.current
+      if (!v || !media || media.isGif) return
+      const clamped = Math.max(0, Math.min(media.duration || 10, targetSec))
+      pendingSeekTimeRef.current = clamped
+
+      if (isSeekingRef.current) return
+
+      const executeNextSeek = () => {
+        const next = pendingSeekTimeRef.current
+        if (next === null || !videoRef.current) {
+          isSeekingRef.current = false
+          return
+        }
+        pendingSeekTimeRef.current = null
+        if (Math.abs(videoRef.current.currentTime - next) < 0.004) {
+          isSeekingRef.current = false
+          return
+        }
+        isSeekingRef.current = true
+
+        let settled = false
+        const onDone = () => {
+          if (settled) return
+          settled = true
+          videoRef.current?.removeEventListener('seeked', onDone)
+          clearTimeout(fallbackTimer)
+          if (pendingSeekTimeRef.current !== null) {
+            executeNextSeek()
+          } else {
+            isSeekingRef.current = false
+          }
+        }
+        const fallbackTimer = setTimeout(onDone, 90)
+        videoRef.current.addEventListener('seeked', onDone, { once: true })
+        videoRef.current.currentTime = next
+      }
+
+      executeNextSeek()
+    },
+    [media]
+  )
+
+  // 60 FPS smooth playhead & trim loop tracker
   useEffect(() => {
     const v = videoRef.current
     if (!v || !media || media.isGif) return
-    const onTimeUpdate = () => {
-      setCurrentTime(v.currentTime)
-      if (v.currentTime >= trimEnd || v.currentTime < trimStart - 0.05) {
-        v.currentTime = trimStart
+
+    let rafId = 0
+    const tick = () => {
+      if (!isScrubbingRef.current && videoRef.current) {
+        const cur = videoRef.current.currentTime
+        setCurrentTime(cur)
+        if (!videoRef.current.paused && (cur >= trimEnd || cur < trimStart - 0.05)) {
+          videoRef.current.currentTime = trimStart
+        }
       }
+      rafId = requestAnimationFrame(tick)
     }
-    v.addEventListener('timeupdate', onTimeUpdate)
-    return () => v.removeEventListener('timeupdate', onTimeUpdate)
+    rafId = requestAnimationFrame(tick)
+
+    return () => cancelAnimationFrame(rafId)
   }, [media, trimStart, trimEnd])
 
   const togglePlay = () => {
     const v = videoRef.current
     if (!v) return
     if (v.paused) {
+      if (v.currentTime >= trimEnd || v.currentTime < trimStart) {
+        v.currentTime = trimStart
+      }
       v.play().catch(() => {})
       setPlaying(true)
     } else {
@@ -162,6 +256,26 @@ export function CropStage({
     dragRef.current = null
   }
 
+  // Sawblade Axis Sliders (Horizontal X and Vertical Y)
+  const updateAxisXFromClient = (clientX: number) => {
+    const rect = axisXTrackRef.current?.getBoundingClientRect()
+    if (!rect || rect.width <= 0) return
+    const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
+    const val = Math.round((ratio * 2 - 1) * AXIS_LIMIT)
+    onTransformChange({ canvasX: Math.abs(val) <= 3 ? 0 : val })
+  }
+
+  const updateAxisYFromClient = (clientY: number) => {
+    const rect = axisYTrackRef.current?.getBoundingClientRect()
+    if (!rect || rect.height <= 0) return
+    const ratio = Math.max(0, Math.min(1, (clientY - rect.top) / rect.height))
+    const val = Math.round((ratio * 2 - 1) * AXIS_LIMIT)
+    onTransformChange({ canvasY: Math.abs(val) <= 3 ? 0 : val })
+  }
+
+  const axisXPct = Math.max(0, Math.min(100, ((canvasX + AXIS_LIMIT) / (AXIS_LIMIT * 2)) * 100))
+  const axisYPct = Math.max(0, Math.min(100, ((canvasY + AXIS_LIMIT) / (AXIS_LIMIT * 2)) * 100))
+
   return (
     <div className="panel stage-panel">
       <div className="panel-header">
@@ -226,87 +340,164 @@ export function CropStage({
           </div>
         ) : (
           <div className="media-stage-container">
-            <div className="canvas-clip-arena">
-              <div
-                ref={canvasBoxRef}
-                className={`sticker-canvas-512 ${canvasBg === 'obsidian' ? 'bg-obsidian' : 'bg-checker'} ${
-                  interactive ? '' : 'canvas-locked'
-                }`}
-                onPointerMove={interactive ? onPointerMove : undefined}
-                onPointerUp={interactive ? endDrag : undefined}
-                onPointerCancel={interactive ? endDrag : undefined}
-              >
-              <div
-                className="canvas-layer"
-                style={{
-                  width: `${(drawW / 512) * 100}%`,
-                  height: `${(drawH / 512) * 100}%`,
-                  left: `${50 + (canvasX / 512) * 100}%`,
-                  top: `${50 + (canvasY / 512) * 100}%`,
-                  transform: `translate(-50%, -50%) rotate(${rotationDeg}deg)`,
-                  cursor: interactive ? 'move' : 'default',
-                }}
-                onPointerDown={interactive ? (e) => startDrag(e, 'move') : undefined}
-              >
-                {media.isGif ? (
-                  <img src={media.objectUrl} alt={media.name} className="canvas-layer-media" draggable={false} />
-                ) : (
-                  <video
-                    ref={videoRef}
-                    src={media.objectUrl}
-                    className="canvas-layer-media"
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                  />
-                )}
+            <div className={`canvas-with-saw-sliders ${interactive ? 'is-interactive' : ''}`}>
+              <div className="canvas-clip-arena">
+                <div
+                  ref={canvasBoxRef}
+                  className={`sticker-canvas-512 ${canvasBg === 'obsidian' ? 'bg-obsidian' : 'bg-checker'} ${
+                    interactive ? '' : 'canvas-locked'
+                  }`}
+                  onPointerMove={interactive ? onPointerMove : undefined}
+                  onPointerUp={interactive ? endDrag : undefined}
+                  onPointerCancel={interactive ? endDrag : undefined}
+                >
+                  <div
+                    className="canvas-layer"
+                    style={{
+                      width: `${(drawW / 512) * 100}%`,
+                      height: `${(drawH / 512) * 100}%`,
+                      left: `${50 + (canvasX / 512) * 100}%`,
+                      top: `${50 + (canvasY / 512) * 100}%`,
+                      transform: `translate(-50%, -50%) rotate(${rotationDeg}deg)`,
+                      cursor: interactive ? 'move' : 'default',
+                    }}
+                    onPointerDown={interactive ? (e) => startDrag(e, 'move') : undefined}
+                  >
+                    {media.isGif ? (
+                      <img
+                        src={media.objectUrl}
+                        alt={media.name}
+                        className="canvas-layer-media"
+                        style={flipH ? { transform: 'scaleX(-1)' } : undefined}
+                        draggable={false}
+                      />
+                    ) : (
+                      <video
+                        ref={videoRef}
+                        src={media.objectUrl}
+                        className="canvas-layer-media"
+                        style={flipH ? { transform: 'scaleX(-1)' } : undefined}
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                      />
+                    )}
 
-                {interactive && (
-                  <>
-                    {/* Rotation stem & handle */}
-                    <div className="rotate-stem" />
-                    <div
-                      className="rotate-handle"
-                      onPointerDown={(e) => startDrag(e, 'rotate')}
-                      title="Arrastra para rotar"
-                    />
+                    {interactive && (
+                      <>
+                        {/* Rotation stem & handle */}
+                        <div className="rotate-stem" />
+                        <div
+                          className="rotate-handle"
+                          onPointerDown={(e) => startDrag(e, 'rotate')}
+                          title={t.dragRotateHint}
+                        />
 
-                    {/* 4 corner scale handles */}
-                    <div className="crop-handle nw" onPointerDown={(e) => startDrag(e, 'scale')} />
-                    <div className="crop-handle ne" onPointerDown={(e) => startDrag(e, 'scale')} />
-                    <div className="crop-handle sw" onPointerDown={(e) => startDrag(e, 'scale')} />
-                    <div className="crop-handle se" onPointerDown={(e) => startDrag(e, 'scale')} />
-                  </>
-                )}
+                        {/* 4 corner scale handles */}
+                        <div className="crop-handle nw" onPointerDown={(e) => startDrag(e, 'scale')} />
+                        <div className="crop-handle ne" onPointerDown={(e) => startDrag(e, 'scale')} />
+                        <div className="crop-handle sw" onPointerDown={(e) => startDrag(e, 'scale')} />
+                        <div className="crop-handle se" onPointerDown={(e) => startDrag(e, 'scale')} />
+                      </>
+                    )}
+                  </div>
+
+                  <span className="canvas-badge-512">
+                    512×512 · {Math.round(canvasScale * 100)}% · {rotationDeg}°{flipH ? ' · ⇄' : ''}
+                  </span>
+                  <div className="canvas-bounds-mask" aria-hidden="true" />
+                </div>
               </div>
 
-              <span className="canvas-badge-512">
-                512×512 · {Math.round(canvasScale * 100)}% · {rotationDeg}°
-              </span>
-              <div className="canvas-bounds-mask" aria-hidden="true" />
-            </div>
-            </div>
+              {interactive && (
+                <>
+                  {/* Vertical Sawblade Slider (Right side of canvas square) */}
+                  <div
+                    ref={axisYTrackRef}
+                    className="saw-axis-slider saw-axis-y"
+                    title={`${t.panYHint} (Y: ${canvasY}px)`}
+                    onDoubleClick={() => onTransformChange({ canvasY: 0 })}
+                    onPointerDown={(e) => {
+                      e.preventDefault()
+                      ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+                      dragRef.current = {
+                        action: 'axisY',
+                        startClientX: e.clientX,
+                        startClientY: e.clientY,
+                        startX: canvasX,
+                        startY: canvasY,
+                        startScale: canvasScale,
+                        centerX: 0,
+                        centerY: 0,
+                        startDist: 0,
+                      }
+                      updateAxisYFromClient(e.clientY)
+                    }}
+                    onPointerMove={(e) => {
+                      if (dragRef.current?.action === 'axisY') {
+                        updateAxisYFromClient(e.clientY)
+                      }
+                    }}
+                    onPointerUp={endDrag}
+                    onPointerCancel={endDrag}
+                  >
+                    <div className="saw-axis-groove" />
+                    <div className="saw-axis-center-tick" />
+                    <div className="saw-axis-thumb" style={{ top: `${axisYPct}%` }}>
+                      <SawbladeThumbSvg angleDeg={canvasY * 2.2} />
+                    </div>
+                  </div>
 
-            {interactive && (
-              <div className="stage-transport">
-                {!media.isGif && (
-                  <>
-                    <button type="button" className="btn-ghost-sm" onClick={togglePlay}>
-                      {playing ? <Pause size={13} /> : <Play size={13} />}
-                      {playing ? t.pause : t.play}
-                    </button>
-                    <span className="transport-time">
-                      {currentTime.toFixed(2)}s / {media.duration.toFixed(2)}s
-                    </span>
-                  </>
-                )}
-                <button type="button" className="btn-ghost-sm" onClick={onResetTransform}>
-                  <RotateCcw size={12} />
-                  {t.resetCrop}
-                </button>
-              </div>
-            )}
+                  {/* Horizontal Sawblade Slider (Below canvas square) */}
+                  <div
+                    ref={axisXTrackRef}
+                    className="saw-axis-slider saw-axis-x"
+                    title={`${t.panXHint} (X: ${canvasX}px)`}
+                    onDoubleClick={() => onTransformChange({ canvasX: 0 })}
+                    onPointerDown={(e) => {
+                      e.preventDefault()
+                      ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+                      dragRef.current = {
+                        action: 'axisX',
+                        startClientX: e.clientX,
+                        startClientY: e.clientY,
+                        startX: canvasX,
+                        startY: canvasY,
+                        startScale: canvasScale,
+                        centerX: 0,
+                        centerY: 0,
+                        startDist: 0,
+                      }
+                      updateAxisXFromClient(e.clientX)
+                    }}
+                    onPointerMove={(e) => {
+                      if (dragRef.current?.action === 'axisX') {
+                        updateAxisXFromClient(e.clientX)
+                      }
+                    }}
+                    onPointerUp={endDrag}
+                    onPointerCancel={endDrag}
+                  >
+                    <div className="saw-axis-groove" />
+                    <div className="saw-axis-center-tick" />
+                    <div className="saw-axis-thumb" style={{ left: `${axisXPct}%` }}>
+                      <SawbladeThumbSvg angleDeg={canvasX * 2.2} />
+                    </div>
+                  </div>
+
+                  {/* Intersection Corner Reset (0,0) */}
+                  <button
+                    type="button"
+                    className="saw-axis-corner-reset"
+                    title={t.centerAxesHint}
+                    onClick={() => onTransformChange({ canvasX: 0, canvasY: 0 })}
+                  >
+                    ⊹
+                  </button>
+                </>
+              )}
+            </div>
 
             <TrimTimeline
               t={t}
@@ -320,15 +511,24 @@ export function CropStage({
               onTogglePlay={togglePlay}
               onTrimChange={onTrimChange}
               onScrubStart={() => {
-                if (videoRef.current && !media.isGif && !videoRef.current.paused) {
-                  videoRef.current.pause()
-                  setPlaying(false)
+                isScrubbingRef.current = true
+                if (videoRef.current && !media.isGif) {
+                  wasPlayingBeforeScrubRef.current = !videoRef.current.paused
+                  if (!videoRef.current.paused) {
+                    videoRef.current.pause()
+                    setPlaying(false)
+                  }
                 }
               }}
               onScrub={(sec) => {
                 setCurrentTime(sec)
-                if (videoRef.current && !media.isGif) {
-                  videoRef.current.currentTime = sec
+                queueFluidVideoSeek(sec)
+              }}
+              onScrubEnd={() => {
+                isScrubbingRef.current = false
+                if (videoRef.current && !media.isGif && wasPlayingBeforeScrubRef.current) {
+                  videoRef.current.play().catch(() => {})
+                  setPlaying(true)
                 }
               }}
             />

@@ -23,6 +23,7 @@ export interface StickerSettings {
   canvasX: number
   canvasY: number
   rotationDeg: number
+  flipH: boolean
   targetSize: number
   fps: number
   quality: number

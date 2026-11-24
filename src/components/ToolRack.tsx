@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import {
   Download,
   Flame,
+  FlipHorizontal2,
   Gauge,
   HelpCircle,
   Link2,
@@ -240,7 +241,7 @@ export function ToolRack({
               type="button"
               className="btn-link-sm"
               onClick={() =>
-                onSettingsChange({ canvasScale: 1, canvasX: 0, canvasY: 0, rotationDeg: 0 })
+                onSettingsChange({ canvasScale: 1, canvasX: 0, canvasY: 0, rotationDeg: 0, flipH: false })
               }
             >
               <RotateCcw size={11} /> {t.resetCrop}
@@ -257,16 +258,38 @@ export function ToolRack({
               step={5}
               unit="%"
               editable
+              hint={t.vialDragHint}
               onChange={(pct) => onSettingsChange({ canvasScale: Number((pct / 100).toFixed(2)) })}
               onReset={() => onSettingsChange({ canvasScale: 1 })}
             />
+
+            <div className="vial-control mirror-control-col">
+              <button
+                type="button"
+                className={`mirror-vial-btn ${settings.flipH ? 'active' : ''}`}
+                onClick={() => onSettingsChange({ flipH: !settings.flipH })}
+                title={t.mirrorHint}
+                aria-pressed={settings.flipH}
+              >
+                <FlipHorizontal2 size={20} />
+              </button>
+              <div className="vial-meta">
+                <span className="vial-label">{t.mirrorLabel}</span>
+                <strong className="vial-value">{settings.flipH ? 'ON' : 'OFF'}</strong>
+              </div>
+            </div>
+
             <VialControl
               label={t.rotateLabel}
               value={settings.rotationDeg}
               min={-180}
               max={180}
+              editMin={-360}
+              editMax={360}
               step={1}
               unit="°"
+              editable
+              hint={t.vialDragHint}
               onChange={(deg) => onSettingsChange({ rotationDeg: deg })}
               onReset={() => onSettingsChange({ rotationDeg: 0 })}
             />
@@ -324,6 +347,7 @@ export function ToolRack({
             min={8}
             max={maxSourceFps}
             step={1}
+            hint={t.vialDragHint}
             onChange={(fps) => {
               const clampedFps = Math.max(8, Math.min(maxSourceFps, fps))
               const nextMaxQ = computeMaxAllowedQuality(clampedFps, effectiveDuration, settings.removeBg)
@@ -341,6 +365,7 @@ export function ToolRack({
             max={maxAllowedQuality}
             step={5}
             unit="%"
+            hint={t.vialDragHint}
             onChange={(q) =>
               onSettingsChange({ quality: Math.max(15, Math.min(maxAllowedQuality, q)) })
             }
@@ -354,6 +379,7 @@ export function ToolRack({
             step={5}
             unit="%"
             accent="cursed"
+            hint={t.vialDragHint}
             onChange={(c) => onSettingsChange({ cursedLevel: Math.max(0, Math.min(100, c)) })}
             onReset={() => onSettingsChange({ cursedLevel: 0 })}
           />

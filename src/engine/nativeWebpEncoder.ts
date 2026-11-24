@@ -73,6 +73,9 @@ function drawTransformedFrame(
   if (Math.abs(settings.rotationDeg) > 0.1) {
     ctx.rotate((settings.rotationDeg * Math.PI) / 180)
   }
+  if (settings.flipH) {
+    ctx.scale(-1, 1)
+  }
   ctx.drawImage(drawSource, -drawW / 2, -drawH / 2, drawW, drawH)
   ctx.restore()
 

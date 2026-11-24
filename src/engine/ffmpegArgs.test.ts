@@ -25,6 +25,7 @@ const baseSettings: StickerSettings = {
   canvasX: 0,
   canvasY: 0,
   rotationDeg: 0,
+  flipH: false,
   targetSize: 512,
   fps: 15,
   quality: 75,
@@ -60,6 +61,7 @@ describe('ffmpegArgs', () => {
         canvasX: 20,
         canvasY: -15,
         rotationDeg: 30,
+        flipH: true,
       },
       640,
       480
@@ -69,6 +71,7 @@ describe('ffmpegArgs', () => {
     expect(vf).toContain('reverse')
     expect(vf).toContain('fps=15')
     expect(vf).toContain('format=rgba')
+    expect(vf).toContain('hflip')
     expect(vf).toContain('rotate=')
     expect(vf).toContain('pad=w=')
     expect(vf).toContain('crop=512:512:(iw-512)/2:(ih-512)/2')

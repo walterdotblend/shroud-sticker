@@ -5,11 +5,13 @@ interface VialControlProps {
   value: number
   min: number
   max: number
+  editMin?: number
   editMax?: number
   step?: number
   unit?: string
   editable?: boolean
   accent?: 'obsidian' | 'cursed'
+  hint?: string
   onChange: (value: number) => void
   onReset?: () => void
 }
@@ -23,11 +25,13 @@ export function VialControl({
   value,
   min,
   max,
+  editMin,
   editMax,
   step = 1,
   unit = '',
   editable = false,
   accent = 'obsidian',
+  hint,
   onChange,
   onReset,
 }: VialControlProps) {
@@ -35,8 +39,8 @@ export function VialControl({
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(String(value))
 
-  const clampAndSnap = (raw: number, upper = max) => {
-    const clamped = Math.max(min, Math.min(upper, raw))
+  const clampAndSnap = (raw: number, lower = min, upper = max) => {
+    const clamped = Math.max(lower, Math.min(upper, raw))
     const snapped = Math.round(clamped / step) * step
     return Number(snapped.toFixed(2))
   }
@@ -55,7 +59,7 @@ export function VialControl({
     const dy = dragRef.current.startY - e.clientY
     const range = max - min
     const next = dragRef.current.startVal + (dy / 110) * range
-    onChange(clampAndSnap(next, max))
+    onChange(clampAndSnap(next, min, max))
   }
 
   const handlePointerUp = () => {
@@ -65,14 +69,16 @@ export function VialControl({
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault()
     const dir = e.deltaY < 0 ? 1 : -1
-    onChange(clampAndSnap(value + dir * step, editMax ?? max))
+    onChange(clampAndSnap(value + dir * step, editMin ?? min, editMax ?? max))
   }
 
   const commitDraft = () => {
     setEditing(false)
-    const num = Number(draft.replace(/[^0-9.-]/g, ''))
-    if (Number.isFinite(num) && num > 0) {
-      onChange(clampAndSnap(num, editMax ?? max))
+    const cleaned = draft.replace(/[^0-9.-]/g, '').trim()
+    if (!cleaned || cleaned === '-') return
+    const num = Number(cleaned)
+    if (Number.isFinite(num)) {
+      onChange(clampAndSnap(num, editMin ?? min, editMax ?? max))
     }
   }
 
@@ -86,7 +92,7 @@ export function VialControl({
         onPointerCancel={handlePointerUp}
         onWheel={handleWheel}
         onDoubleClick={onReset}
-        title="Arrastra arriba/abajo o usa la rueda del ratón (doble clic para resetear)"
+        title={hint || 'Drag up/down or use mouse wheel (double-click to reset)'}
       >
         <div className="vial-ticks" aria-hidden="true">
           <span />

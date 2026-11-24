@@ -115,6 +115,10 @@ export function buildStickerFilterGraph(
     filters.push(`eq=contrast=${contrast}:saturation=${sat}`)
   }
 
+  if (settings.flipH) {
+    filters.push('hflip')
+  }
+
   if (Math.abs(settings.rotationDeg) > 0.1) {
     const rad = ((settings.rotationDeg * Math.PI) / 180).toFixed(5)
     filters.push(`rotate=${rad}:c=0x00000000:ow='rotw(${rad})':oh='roth(${rad})'`)
