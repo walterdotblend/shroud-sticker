@@ -273,46 +273,72 @@ export function ToolRack({
                 <span className="mirror-arch-frame" aria-hidden="true">
                   <svg viewBox="0 0 36 86" className="mirror-arch-svg">
                     <defs>
-                      <linearGradient id="mirrorGlass" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor={settings.flipH ? '#ff5f6d' : '#3a2228'} stopOpacity="0.85" />
-                        <stop offset="50%" stopColor={settings.flipH ? '#8b1922' : '#160d11'} stopOpacity="0.95" />
-                        <stop offset="100%" stopColor="#090608" stopOpacity="1" />
+                      <linearGradient id="mirrorLeftGlass" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#352026" />
+                        <stop offset="100%" stopColor="#0d080a" />
+                      </linearGradient>
+                      <linearGradient id="mirrorRightShatter" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor={settings.flipH ? '#ff4d5a' : '#2c151a'} stopOpacity="0.9" />
+                        <stop offset="55%" stopColor={settings.flipH ? '#8b1922' : '#14090c'} stopOpacity="0.95" />
+                        <stop offset="100%" stopColor="#080507" />
                       </linearGradient>
                     </defs>
-                    {/* Gothic pointed arch mirror */}
+
+                    {/* Left intact half of the gothic mirror */}
                     <path
-                      d="M18 4 C29 14 32 26 32 42 L32 80 L4 80 L4 42 C4 26 7 14 18 4 Z"
-                      fill="url(#mirrorGlass)"
+                      d="M18 4 C9 13 4 24 4 38 L4 80 L18 80 Z"
+                      fill="url(#mirrorLeftGlass)"
+                      stroke={settings.flipH ? '#e6c2c2' : '#7a3b42'}
+                      strokeWidth="1.4"
+                    />
+
+                    {/* Right shattered half (glows crimson when active) */}
+                    <path
+                      d="M18 4 C27 13 32 24 32 38 L32 80 L18 80 Z"
+                      fill="url(#mirrorRightShatter)"
                       stroke={settings.flipH ? '#ffe4e6' : '#7a3b42'}
-                      strokeWidth="1.6"
+                      strokeWidth="1.4"
                     />
-                    {/* Symmetry axis line */}
-                    <line
-                      x1="18"
-                      y1="8"
-                      x2="18"
-                      y2="77"
-                      stroke={settings.flipH ? '#ffd1d6' : '#8f8285'}
-                      strokeWidth="1.1"
-                      strokeDasharray="3 2"
-                    />
-                    {/* Twin reflected crescent fangs */}
-                    <path
-                      d="M14 28 C10 34 10 46 14 52"
+
+                    {/* Center vertical fracture seam */}
+                    <polyline
+                      points="18,5 17,18 19,31 17,45 19,60 18,79"
                       fill="none"
                       stroke={settings.flipH ? '#ffffff' : '#c29b9d'}
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
+                      strokeWidth="1.4"
+                      strokeLinejoin="round"
                     />
-                    <path
-                      d="M22 28 C26 34 26 46 22 52"
+
+                    {/* Jagged shattered glass cracks radiating on the right side */}
+                    <polyline
+                      points="18,29 25,22 31,26"
                       fill="none"
-                      stroke={settings.flipH ? '#ff7b88' : '#7a3b42'}
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
+                      stroke={settings.flipH ? '#ffd1d6' : '#8f5259'}
+                      strokeWidth="1.1"
                     />
-                    {/* Glass glint */}
-                    <line x1="9" y1="20" x2="15" y2="12" stroke="rgba(255,255,255,0.45)" strokeWidth="1.2" strokeLinecap="round" />
+                    <polyline
+                      points="18,43 26,40 32,48"
+                      fill="none"
+                      stroke={settings.flipH ? '#ffd1d6' : '#8f5259'}
+                      strokeWidth="1.1"
+                    />
+                    <polyline
+                      points="18,57 24,63 31,61"
+                      fill="none"
+                      stroke={settings.flipH ? '#ffd1d6' : '#8f5259'}
+                      strokeWidth="1.1"
+                    />
+                    <line
+                      x1="25"
+                      y1="22"
+                      x2="26"
+                      y2="40"
+                      stroke={settings.flipH ? '#ff9aa4' : '#633339'}
+                      strokeWidth="0.9"
+                    />
+
+                    {/* Subtle intact mirror reflection sheen on left half */}
+                    <line x1="8" y1="24" x2="14" y2="14" stroke="rgba(255,255,255,0.4)" strokeWidth="1.2" strokeLinecap="round" />
                   </svg>
                 </span>
               </button>

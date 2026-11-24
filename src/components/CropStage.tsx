@@ -38,9 +38,9 @@ type DragAction = 'move' | 'scale' | 'rotate' | 'axisX' | 'axisY' | null
 
 /**
  * Infinite side-view circular sawblade jog wheel SVG.
- * Renders only the jagged teeth peeking out of a recessed slot; translating
- * the repeating tooth pattern modulo the tooth pitch (24px) creates seamless
- * endless rotation whenever the wheel or the video canvas is moved.
+ * Renders crisp, uniform machined saw teeth peeking out of a cylindrical slot
+ * with metallic bevel shading. Translating modulo the tooth pitch (16px)
+ * creates seamless endless rotation whenever the wheel or canvas moves.
  */
 function SideSawTeeth({
   orientation,
@@ -49,14 +49,19 @@ function SideSawTeeth({
   orientation: 'vertical' | 'horizontal'
   offsetPx: number
 }) {
-  const pitch = 24
+  const pitch = 16
   const shift = ((offsetPx % pitch) + pitch) % pitch - pitch
-  const count = 16 // 16 * 24 = 384px (> 300px track)
+  const count = 22 // 22 * 16 = 352px (> 300px track)
 
   if (orientation === 'vertical') {
-    const teeth = Array.from({ length: count }, (_, i) => {
+    const outerPath = Array.from({ length: count }, (_, i) => {
       const y = i * pitch
-      return `M22,${y} L4,${y + 6} L12,${y + 13} L22,${y + 18} L22,${y + 24}`
+      return `M22,${y} L6,${y + 5} L13,${y + 11} L22,${y + 13} L22,${y + 16}`
+    }).join(' ')
+
+    const bevelLines = Array.from({ length: count }, (_, i) => {
+      const y = i * pitch
+      return `M22,${y + 1} L7,${y + 5.3} M13,${y + 11} L22,${y + 13}`
     }).join(' ')
 
     return (
@@ -67,15 +72,27 @@ function SideSawTeeth({
         style={{ transform: `translateY(${shift}px)` }}
         aria-hidden="true"
       >
-        <path d={`${teeth} L24,${count * pitch} L24,0 Z`} fill="#8b1922" />
-        <path d={teeth} fill="none" stroke="#e6c2c2" strokeWidth="1.2" strokeLinejoin="miter" />
+        <defs>
+          <linearGradient id="sawBladeVert" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#e6c2c2" />
+            <stop offset="35%" stopColor="#a8202c" />
+            <stop offset="100%" stopColor="#26090e" />
+          </linearGradient>
+        </defs>
+        <path d={`${outerPath} L24,${count * pitch} L24,0 Z`} fill="url(#sawBladeVert)" />
+        <path d={bevelLines} fill="none" stroke="#f2d6d6" strokeWidth="1" strokeOpacity="0.75" />
       </svg>
     )
   }
 
-  const teeth = Array.from({ length: count }, (_, i) => {
+  const outerPath = Array.from({ length: count }, (_, i) => {
     const x = i * pitch
-    return `M${x},22 L${x + 6},4 L${x + 13},12 L${x + 18},22 L${x + 24},22`
+    return `M${x},22 L${x + 5},6 L${x + 11},13 L${x + 13},22 L${x + 16},22`
+  }).join(' ')
+
+  const bevelLines = Array.from({ length: count }, (_, i) => {
+    const x = i * pitch
+    return `M${x + 1},22 L${x + 5.3},7 M${x + 11},13 L${x + 13},22`
   }).join(' ')
 
   return (
@@ -86,8 +103,15 @@ function SideSawTeeth({
       style={{ transform: `translateX(${shift}px)` }}
       aria-hidden="true"
     >
-      <path d={`${teeth} L${count * pitch},24 L0,24 Z`} fill="#8b1922" />
-      <path d={teeth} fill="none" stroke="#e6c2c2" strokeWidth="1.2" strokeLinejoin="miter" />
+      <defs>
+        <linearGradient id="sawBladeHoriz" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#e6c2c2" />
+          <stop offset="35%" stopColor="#a8202c" />
+          <stop offset="100%" stopColor="#26090e" />
+        </linearGradient>
+      </defs>
+      <path d={`${outerPath} L${count * pitch},24 L0,24 Z`} fill="url(#sawBladeHoriz)" />
+      <path d={bevelLines} fill="none" stroke="#f2d6d6" strokeWidth="1" strokeOpacity="0.75" />
     </svg>
   )
 }

@@ -1952,11 +1952,11 @@ button:disabled {
 
 .side-saw-svg.vertical {
   width: 24px;
-  height: 384px;
+  height: 352px;
 }
 
 .side-saw-svg.horizontal {
-  width: 384px;
+  width: 352px;
   height: 24px;
 }
 
