@@ -5,6 +5,7 @@ import {
   Gauge,
   HelpCircle,
   Link2,
+  Monitor,
   Move,
   Plus,
   QrCode,
@@ -513,95 +514,125 @@ export function ToolRack({
           {encoding ? t.forgingButton : t.forgeButton}
         </button>
 
-        <div className="export-buttons-grid">
-          <button type="button" className="btn-export" disabled={!result || encoding} onClick={onDownload}>
-            <div className="export-icons">
-              <Smartphone size={14} />
-              <span className="os-tag">Android · iOS</span>
+        {/* 2 Columns below Forge: Mobile (.webp / Pack / QR) & PC (WhatsApp Web + Sound) */}
+        <div className="forge-split-cols">
+          {/* Column 1: Mobile */}
+          <div className="forge-platform-col">
+            <div className="forge-col-header">
+              <Smartphone size={13} className="icon-crimson" />
+              <span>{t.mobileColTitle}</span>
             </div>
-            <span className="export-label">{t.downloadWebpPc}</span>
-          </button>
 
-          <button
-            type="button"
-            className="btn-export btn-export-mobile"
-            disabled={!result || encoding}
-            onClick={onAddToPack}
-          >
-            <div className="export-icons">
-              <Plus size={15} />
+            <div className="export-buttons-grid">
+              <button type="button" className="btn-export" disabled={!result || encoding} onClick={onDownload}>
+                <div className="export-icons">
+                  <Download size={14} />
+                </div>
+                <span className="export-label">{t.downloadWebpPc}</span>
+              </button>
+
+              <button
+                type="button"
+                className="btn-export btn-export-mobile"
+                disabled={!result || encoding}
+                onClick={onAddToPack}
+              >
+                <div className="export-icons">
+                  <Plus size={14} />
+                </div>
+                <span className="export-label">{t.addToPack}</span>
+              </button>
             </div>
-            <span className="export-label">{t.addToPack}</span>
-          </button>
-        </div>
 
-        {/* Direct WhatsApp Web Sound Sticker Bridge (via SHROUD Extension) */}
-        <div className="wa-web-send-box">
-          <div className="wa-web-controls-row">
-            <select
-              value={waTargetMode}
-              onChange={(e) => setWaTargetMode(e.target.value as 'self' | 'active')}
-              className="terminal-select"
-              aria-label="WhatsApp target chat"
-            >
-              <option value="self">{t.waTargetSelf}</option>
-              <option value="active">{t.waTargetActive}</option>
-            </select>
-            <label className="checkbox-inline">
-              <input
-                type="checkbox"
-                checked={waOpenForward}
-                onChange={(e) => setWaOpenForward(e.target.checked)}
-              />
-              <span>{t.waOpenForward}</span>
-            </label>
-          </div>
-          <button
-            type="button"
-            className="btn-crimson forge-main-btn"
-            disabled={!result || encoding || waSending}
-            onClick={() => onSendToWhatsAppWeb(waTargetMode, waOpenForward)}
-          >
-            <Send size={15} />
-            {waSending ? t.sendToWaWebSending : t.sendToWaWebBtn}
-          </button>
-          {waSendStatus && <div className="p2p-status-badge">{waSendStatus}</div>}
-          {!waExtAvailable && (
-            <a
-              href={`${import.meta.env.BASE_URL}shroud-extension.zip`}
-              download="shroud-extension.zip"
-              className="btn-secondary ext-download-btn"
-            >
-              <Download size={13} />
-              {t.downloadExtBtn}
-            </a>
-          )}
-        </div>
-
-        {qrDataUrl && (
-          <div className="qr-card qr-card-large">
-            <img src={qrDataUrl} alt="P2P QR Code" className="qr-image-large" />
-            <div className="qr-info">
-              <div className="qr-title">
-                <QrCode size={14} className="icon-crimson" />
-                <span>{t.qrTitle}</span>
+            {qrDataUrl && (
+              <div className="qr-card qr-card-compact">
+                <img src={qrDataUrl} alt="P2P QR Code" className="qr-image" />
+                <div className="qr-info">
+                  <div className="qr-title">
+                    <QrCode size={13} className="icon-crimson" />
+                    <span>{t.qrTitle}</span>
+                  </div>
+                  {p2pStatus && <div className="p2p-status-badge">{p2pStatus}</div>}
+                  <p className="qr-note">{t.qrLocalNote}</p>
+                </div>
               </div>
-              {p2pStatus && <div className="p2p-status-badge">{p2pStatus}</div>}
-              <p className="qr-note">{t.qrLocalNote}</p>
+            )}
+
+            <div className="import-guide">
+              <div className="import-guide-title">
+                <HelpCircle size={12} className="icon-crimson" />
+                <span>{t.importTitle}</span>
+              </div>
+              <ul className="import-list">
+                <li>{t.importAndroid}</li>
+                <li>{t.importIos}</li>
+                <li>{t.importDesktop}</li>
+              </ul>
             </div>
           </div>
-        )}
 
-        <div className="import-guide">
-          <div className="import-guide-title">
-            <HelpCircle size={13} className="icon-crimson" />
-            <span>{t.importTitle}</span>
+          {/* Column 2: PC (WhatsApp Web) */}
+          <div className="forge-platform-col">
+            <div className="forge-col-header">
+              <Monitor size={13} className="icon-crimson" />
+              <span>{t.pcColTitle}</span>
+            </div>
+
+            <div className="wa-web-controls-row">
+              <select
+                value={waTargetMode}
+                onChange={(e) => setWaTargetMode(e.target.value as 'self' | 'active')}
+                className="terminal-select"
+                aria-label="WhatsApp target chat"
+              >
+                <option value="self">{t.waTargetSelf}</option>
+                <option value="active">{t.waTargetActive}</option>
+              </select>
+              <label className="checkbox-inline">
+                <input
+                  type="checkbox"
+                  checked={waOpenForward}
+                  onChange={(e) => setWaOpenForward(e.target.checked)}
+                />
+                <span>{t.waOpenForward}</span>
+              </label>
+            </div>
+
+            <button
+              type="button"
+              className="btn-crimson forge-main-btn"
+              disabled={!result || encoding || waSending}
+              onClick={() => onSendToWhatsAppWeb(waTargetMode, waOpenForward)}
+            >
+              <Send size={14} />
+              {waSending ? t.sendToWaWebSending : t.sendToWaWebBtn}
+            </button>
+
+            {waSendStatus && <div className="p2p-status-badge">{waSendStatus}</div>}
+
+            {!waExtAvailable && (
+              <a
+                href={`${import.meta.env.BASE_URL}shroud-extension.zip`}
+                download="shroud-extension.zip"
+                className="btn-secondary ext-download-btn"
+              >
+                <Download size={13} />
+                {t.downloadExtBtn}
+              </a>
+            )}
+
+            <div className="import-guide">
+              <div className="import-guide-title">
+                <HelpCircle size={12} className="icon-crimson" />
+                <span>{t.pcColTitle}</span>
+              </div>
+              <ul className="import-list">
+                <li>{t.pcGuide1}</li>
+                <li>{t.pcGuide2}</li>
+                <li>{t.pcGuide3}</li>
+              </ul>
+            </div>
           </div>
-          <ul className="import-list">
-            <li>{t.importAndroid}</li>
-            <li>{t.importIos}</li>
-            <li>{t.importDesktop}</li>
-          </ul>
         </div>
 
         <div className="wizard-nav">

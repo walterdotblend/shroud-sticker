@@ -2311,15 +2311,74 @@ button:disabled {
   animation: metal-spark-fly 0.28s linear infinite;
 }
 
-.saw-sparks-layer.vertical .saw-spark.sp1 { left: 6px; top: 25%; --sx: -14px; --sy: -10px; }
-.saw-sparks-layer.vertical .saw-spark.sp2 { left: 5px; top: 45%; --sx: -18px; --sy: 8px; animation-delay: 0.07s; }
-.saw-sparks-layer.vertical .saw-spark.sp3 { left: 7px; top: 65%; --sx: -12px; --sy: -12px; animation-delay: 0.14s; }
-.saw-sparks-layer.vertical .saw-spark.sp4 { left: 6px; top: 82%; --sx: -16px; --sy: 10px; animation-delay: 0.2s; }
+.saw-sparks-layer.vertical .saw-spark.sp-top-1 { left: 4px; top: 3%; --sx: -18px; --sy: -14px; animation-duration: 0.24s; }
+.saw-sparks-layer.vertical .saw-spark.sp-top-2 { left: 6px; top: 6%; --sx: -22px; --sy: -6px; animation-delay: 0.05s; animation-duration: 0.28s; }
+.saw-sparks-layer.vertical .saw-spark.sp-top-3 { left: 3px; top: 9%; --sx: -14px; --sy: -18px; animation-delay: 0.1s; animation-duration: 0.22s; }
+.saw-sparks-layer.vertical .saw-spark.sp-top-4 { left: 8px; top: 5%; --sx: -16px; --sy: 8px; animation-delay: 0.14s; animation-duration: 0.26s; }
+.saw-sparks-layer.vertical .saw-spark.sp-top-5 { left: 5px; top: 11%; --sx: -20px; --sy: -2px; animation-delay: 0.19s; animation-duration: 0.25s; }
 
-.saw-sparks-layer.horizontal .saw-spark.sp1 { top: 6px; left: 22%; --sx: -10px; --sy: -14px; }
-.saw-sparks-layer.horizontal .saw-spark.sp2 { top: 5px; left: 45%; --sx: 8px; --sy: -18px; animation-delay: 0.07s; }
-.saw-sparks-layer.horizontal .saw-spark.sp3 { top: 7px; left: 68%; --sx: -12px; --sy: -12px; animation-delay: 0.14s; }
-.saw-sparks-layer.horizontal .saw-spark.sp4 { top: 6px; left: 85%; --sx: 10px; --sy: -16px; animation-delay: 0.2s; }
+.saw-sparks-layer.vertical .saw-spark.sp-bot-1 { left: 4px; top: 89%; --sx: -18px; --sy: 14px; animation-duration: 0.24s; }
+.saw-sparks-layer.vertical .saw-spark.sp-bot-2 { left: 6px; top: 93%; --sx: -22px; --sy: 6px; animation-delay: 0.06s; animation-duration: 0.28s; }
+.saw-sparks-layer.vertical .saw-spark.sp-bot-3 { left: 3px; top: 96%; --sx: -14px; --sy: 18px; animation-delay: 0.11s; animation-duration: 0.22s; }
+.saw-sparks-layer.vertical .saw-spark.sp-bot-4 { left: 8px; top: 91%; --sx: -16px; --sy: -8px; animation-delay: 0.15s; animation-duration: 0.26s; }
+.saw-sparks-layer.vertical .saw-spark.sp-bot-5 { left: 5px; top: 95%; --sx: -20px; --sy: 2px; animation-delay: 0.2s; animation-duration: 0.25s; }
+
+.saw-sparks-layer.horizontal .saw-spark.sp-left-1 { top: 4px; left: 3%; --sx: -14px; --sy: -18px; animation-duration: 0.24s; }
+.saw-sparks-layer.horizontal .saw-spark.sp-left-2 { top: 6px; left: 6%; --sx: -6px; --sy: -22px; animation-delay: 0.05s; animation-duration: 0.28s; }
+.saw-sparks-layer.horizontal .saw-spark.sp-left-3 { top: 3px; left: 9%; --sx: -18px; --sy: -14px; animation-delay: 0.1s; animation-duration: 0.22s; }
+.saw-sparks-layer.horizontal .saw-spark.sp-left-4 { top: 8px; left: 5%; --sx: 8px; --sy: -16px; animation-delay: 0.14s; animation-duration: 0.26s; }
+.saw-sparks-layer.horizontal .saw-spark.sp-left-5 { top: 5px; left: 11%; --sx: -2px; --sy: -20px; animation-delay: 0.19s; animation-duration: 0.25s; }
+
+.saw-sparks-layer.horizontal .saw-spark.sp-right-1 { top: 4px; left: 89%; --sx: 14px; --sy: -18px; animation-duration: 0.24s; }
+.saw-sparks-layer.horizontal .saw-spark.sp-right-2 { top: 6px; left: 93%; --sx: 6px; --sy: -22px; animation-delay: 0.06s; animation-duration: 0.28s; }
+.saw-sparks-layer.horizontal .saw-spark.sp-right-3 { top: 3px; left: 96%; --sx: 18px; --sy: -14px; animation-delay: 0.11s; animation-duration: 0.22s; }
+.saw-sparks-layer.horizontal .saw-spark.sp-right-4 { top: 8px; left: 91%; --sx: -8px; --sy: -16px; animation-delay: 0.15s; animation-duration: 0.26s; }
+.saw-sparks-layer.horizontal .saw-spark.sp-right-5 { top: 5px; left: 95%; --sx: 2px; --sy: -20px; animation-delay: 0.2s; animation-duration: 0.25s; }
+
+/* 2-Column Mobile vs PC Export & Tutorials below Forge */
+.forge-split-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  align-items: start;
+}
+
+@media (max-width: 720px) {
+  .forge-split-cols {
+    grid-template-columns: 1fr;
+  }
+}
+
+.forge-platform-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 6px;
+  background: rgba(12, 8, 11, 0.85);
+  border: 1px solid var(--border-dim);
+}
+
+.forge-col-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--bone-rose);
+  letter-spacing: 0.04em;
+  padding-bottom: 5px;
+  border-bottom: 1px solid rgba(122, 59, 66, 0.35);
+}
+
+.qr-card-compact {
+  flex-direction: column;
+  text-align: center;
+}
+
+.qr-card-compact .qr-info {
+  align-items: center;
+}
 
 @keyframes metal-spark-fly {
   0% {

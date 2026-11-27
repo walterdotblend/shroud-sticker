@@ -641,10 +641,16 @@ export function CropStage({
                     <div className="saw-jog-sheen vertical" aria-hidden="true" />
                     {sparkAxisY && (
                       <div className="saw-sparks-layer vertical" aria-hidden="true">
-                        <i className="saw-spark sp1" />
-                        <i className="saw-spark sp2" />
-                        <i className="saw-spark sp3" />
-                        <i className="saw-spark sp4" />
+                        <i className="saw-spark sp-top-1" />
+                        <i className="saw-spark sp-top-2" />
+                        <i className="saw-spark sp-top-3" />
+                        <i className="saw-spark sp-top-4" />
+                        <i className="saw-spark sp-top-5" />
+                        <i className="saw-spark sp-bot-1" />
+                        <i className="saw-spark sp-bot-2" />
+                        <i className="saw-spark sp-bot-3" />
+                        <i className="saw-spark sp-bot-4" />
+                        <i className="saw-spark sp-bot-5" />
                       </div>
                     )}
                   </div>
@@ -689,10 +695,16 @@ export function CropStage({
                     <div className="saw-jog-sheen horizontal" aria-hidden="true" />
                     {sparkAxisX && (
                       <div className="saw-sparks-layer horizontal" aria-hidden="true">
-                        <i className="saw-spark sp1" />
-                        <i className="saw-spark sp2" />
-                        <i className="saw-spark sp3" />
-                        <i className="saw-spark sp4" />
+                        <i className="saw-spark sp-left-1" />
+                        <i className="saw-spark sp-left-2" />
+                        <i className="saw-spark sp-left-3" />
+                        <i className="saw-spark sp-left-4" />
+                        <i className="saw-spark sp-left-5" />
+                        <i className="saw-spark sp-right-1" />
+                        <i className="saw-spark sp-right-2" />
+                        <i className="saw-spark sp-right-3" />
+                        <i className="saw-spark sp-right-4" />
+                        <i className="saw-spark sp-right-5" />
                       </div>
                     )}
                   </div>

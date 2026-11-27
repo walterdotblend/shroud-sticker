@@ -137,6 +137,11 @@ export interface Translations {
   waOpenForward: string
   waExtMissingHint: string
   downloadExtBtn: string
+  mobileColTitle: string
+  pcColTitle: string
+  pcGuide1: string
+  pcGuide2: string
+  pcGuide3: string
 }
 
 const en: Translations = {
@@ -266,6 +271,11 @@ const en: Translations = {
   waOpenForward: 'Open Forward dialog after sending',
   waExtMissingHint: 'Extension not detected. Download and install it in Chrome/Edge, then refresh this page.',
   downloadExtBtn: 'Download SHROUD Extension (.zip)',
+  mobileColTitle: 'MOBILE · ANDROID / iOS',
+  pcColTitle: 'PC · WHATSAPP WEB',
+  pcGuide1: '1. Install the SHROUD Chrome/Edge extension (load unpacked .zip) and refresh this page.',
+  pcGuide2: '2. Keep web.whatsapp.com open in another tab (logged into your account).',
+  pcGuide3: '3. Click "Send to WhatsApp Web" to publish animated stickers (with sound) directly.',
 }
 
 const es: Translations = {
@@ -395,6 +405,11 @@ const es: Translations = {
   waOpenForward: 'Abrir diálogo Reenviar al terminar',
   waExtMissingHint: 'Extensión no detectada. Descárgala e instálala en Chrome/Edge y recarga esta página.',
   downloadExtBtn: 'Descargar Extensión SHROUD (.zip)',
+  mobileColTitle: 'CELULAR · ANDROID / iOS',
+  pcColTitle: 'PC · WHATSAPP WEB',
+  pcGuide1: '1. Instala la extensión de SHROUD en Chrome/Edge (descomprime el .zip y cárgalo) y recarga.',
+  pcGuide2: '2. Mantén web.whatsapp.com abierto en otra pestaña con tu sesión iniciada.',
+  pcGuide3: '3. Pulsa "Enviar a WhatsApp Web" para mandar stickers animados (con sonido) directo.',
 }
 
 const pt: Translations = {
@@ -524,6 +539,11 @@ const pt: Translations = {
   waOpenForward: 'Abrir Encaminhar após enviar',
   waExtMissingHint: 'Extensão não detectada. Baixe e instale no Chrome/Edge e recarregue esta página.',
   downloadExtBtn: 'Baixar Extensão SHROUD (.zip)',
+  mobileColTitle: 'CELULAR · ANDROID / iOS',
+  pcColTitle: 'PC · WHATSAPP WEB',
+  pcGuide1: '1. Instale a extensão SHROUD no Chrome/Edge (extraia o .zip e carregue) e atualize.',
+  pcGuide2: '2. Mantenha o web.whatsapp.com aberto em outra aba com sua conta conectada.',
+  pcGuide3: '3. Clique em "Enviar para WhatsApp Web" para enviar figurinhas (com som) direto.',
 }
 
 const fr: Translations = {
@@ -653,6 +673,11 @@ const fr: Translations = {
   waOpenForward: 'Ouvrir Transférer après l’envoi',
   waExtMissingHint: 'Extension non détectée. Téléchargez-la et installez-la dans Chrome/Edge, puis actualisez.',
   downloadExtBtn: 'Télécharger l’extension SHROUD (.zip)',
+  mobileColTitle: 'MOBILE · ANDROID / iOS',
+  pcColTitle: 'PC · WHATSAPP WEB',
+  pcGuide1: '1. Installez l’extension SHROUD dans Chrome/Edge (décompressez le .zip) et actualisez.',
+  pcGuide2: '2. Gardez web.whatsapp.com ouvert et connecté dans un autre onglet.',
+  pcGuide3: '3. Cliquez sur "Envoyer vers WhatsApp Web" pour publier directement (avec son).',
 }
 
 const de: Translations = {
@@ -782,6 +807,11 @@ const de: Translations = {
   waOpenForward: 'Weiterleiten-Dialog nach Senden öffnen',
   waExtMissingHint: 'Erweiterung nicht erkannt. In Chrome/Edge herunterladen, installieren und Seite neu laden.',
   downloadExtBtn: 'SHROUD-Erweiterung herunterladen (.zip)',
+  mobileColTitle: 'MOBIL · ANDROID / iOS',
+  pcColTitle: 'PC · WHATSAPP WEB',
+  pcGuide1: '1. SHROUD-Erweiterung in Chrome/Edge laden (.zip entpacken) und Seite neu laden.',
+  pcGuide2: '2. web.whatsapp.com in einem anderen Tab geöffnet und angemeldet lassen.',
+  pcGuide3: '3. Auf "An WhatsApp Web senden" klicken, um Sticker (mit Ton) direkt zu senden.',
 }
 
 const ja: Translations = {
@@ -911,6 +941,11 @@ const ja: Translations = {
   waOpenForward: '送信後に転送画面を開く',
   waExtMissingHint: '拡張機能が検出されませんでした。ダウンロードしてChrome/Edgeに読み込み、ページを再読み込みしてください。',
   downloadExtBtn: 'SHROUD拡張機能をダウンロード (.zip)',
+  mobileColTitle: 'スマホ · ANDROID / iOS',
+  pcColTitle: 'PC · WHATSAPP WEB',
+  pcGuide1: '1. SHROUD拡張機能（.zipを展開）をChrome/Edgeに読み込み、ページを更新します。',
+  pcGuide2: '2. 別タブで web.whatsapp.com を開いてログインした状態にします。',
+  pcGuide3: '3.「WhatsApp Webへ送信」を押すと音声付きスタンプを直接送信できます。',
 }
 
 const ru: Translations = {
@@ -1040,6 +1075,11 @@ const ru: Translations = {
   waOpenForward: 'Открыть окно пересылки после отправки',
   waExtMissingHint: 'Расширение не найдено. Скачайте и установите его в Chrome/Edge, затем обновите страницу.',
   downloadExtBtn: 'Скачать расширение SHROUD (.zip)',
+  mobileColTitle: 'ТЕЛЕФОН · ANDROID / iOS',
+  pcColTitle: 'ПК · WHATSAPP WEB',
+  pcGuide1: '1. Установите расширение SHROUD в Chrome/Edge (распакуйте .zip) и обновите страницу.',
+  pcGuide2: '2. Держите web.whatsapp.com открытым и авторизованным в соседней вкладке.',
+  pcGuide3: '3. Нажмите «Отправить в WhatsApp Web» для прямой отправки стикера со звуком.',
 }
 
 const DICTIONARIES: Record<LangCode, Translations> = { en, es, pt, fr, de, ja, ru }
