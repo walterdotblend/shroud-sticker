@@ -21,9 +21,9 @@
   "content_scripts": [
     {
       "matches": [
-        "https://walterdotblend.github.io/shroud-sticker/*",
-        "http://localhost:5173/*",
-        "http://127.0.0.1:5173/*"
+        "https://walterdotblend.github.io/*",
+        "http://localhost/*",
+        "http://127.0.0.1/*"
       ],
       "js": ["shroud_bridge.js"],
       "run_at": "document_start"

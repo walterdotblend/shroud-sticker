@@ -24,6 +24,7 @@ interface CropStageProps {
   audioEnabled: boolean
   audioVolume: number
   audioStart: number
+  audioEnd: number
   loopVideoToAudio: boolean
   result: EncodeResult | null
   viewMode: 'source' | 'result'
@@ -42,6 +43,7 @@ interface CropStageProps {
     audioEnabled?: boolean
     audioVolume?: number
     audioStart?: number
+    audioEnd?: number
     loopVideoToAudio?: boolean
   }) => void
   onUploadAudioFile: (file: File) => void
@@ -150,6 +152,7 @@ export function CropStage({
   audioEnabled,
   audioVolume,
   audioStart,
+  audioEnd,
   loopVideoToAudio,
   result,
   viewMode,
@@ -171,6 +174,30 @@ export function CropStage({
   const [playing, setPlaying] = useState(true)
   const [currentTime, setCurrentTime] = useState(0)
   const [currentAudioTime, setCurrentAudioTime] = useState(audioStart)
+  const [sparkAxisX, setSparkAxisX] = useState(false)
+  const [sparkAxisY, setSparkAxisY] = useState(false)
+  const prevXRef = useRef(canvasX)
+  const prevYRef = useRef(canvasY)
+  const sparkTimerX = useRef<number | null>(null)
+  const sparkTimerY = useRef<number | null>(null)
+
+  useEffect(() => {
+    if (canvasX !== prevXRef.current) {
+      prevXRef.current = canvasX
+      setSparkAxisX(true)
+      if (sparkTimerX.current) clearTimeout(sparkTimerX.current)
+      sparkTimerX.current = window.setTimeout(() => setSparkAxisX(false), 260)
+    }
+  }, [canvasX])
+
+  useEffect(() => {
+    if (canvasY !== prevYRef.current) {
+      prevYRef.current = canvasY
+      setSparkAxisY(true)
+      if (sparkTimerY.current) clearTimeout(sparkTimerY.current)
+      sparkTimerY.current = window.setTimeout(() => setSparkAxisY(false), 260)
+    }
+  }, [canvasY])
 
   // Non-canceling frame-locked seek queue for ultra-fluid scrubbing
   const isSeekingRef = useRef(false)
@@ -294,18 +321,16 @@ export function CropStage({
     let rafId = 0
     const effectiveVidDur = computeEffectiveDuration(trimStart, trimEnd, speed)
     const audioWindowMax = audioTrack
-      ? Math.min(
-          10,
-          loopVideoToAudio ? Math.max(effectiveVidDur, audioTrack.duration - audioStart) : effectiveVidDur
-        )
+      ? Math.min(10, Math.max(0.1, Math.min(audioTrack.duration, audioEnd) - audioStart))
       : effectiveVidDur
+    const videoLoopBoundary = Math.min(media.duration, trimEnd)
 
     const tick = () => {
       if (!isScrubbingRef.current) {
         if (v && !media.isGif) {
           const cur = v.currentTime
           setCurrentTime(cur)
-          if (!v.paused && (cur >= trimEnd || cur < trimStart - 0.05)) {
+          if (!v.paused && (cur >= videoLoopBoundary || cur < trimStart - 0.05)) {
             v.currentTime = trimStart
             if (a && audioTrack && audioEnabled && !loopVideoToAudio) {
               a.currentTime = audioStart
@@ -614,6 +639,14 @@ export function CropStage({
                   >
                     <SideSawTeeth orientation="vertical" offsetPx={canvasY} />
                     <div className="saw-jog-sheen vertical" aria-hidden="true" />
+                    {sparkAxisY && (
+                      <div className="saw-sparks-layer vertical" aria-hidden="true">
+                        <i className="saw-spark sp1" />
+                        <i className="saw-spark sp2" />
+                        <i className="saw-spark sp3" />
+                        <i className="saw-spark sp4" />
+                      </div>
+                    )}
                   </div>
 
                   {/* Infinite Horizontal Side-View Sawblade Jog Wheel (Below canvas) */}
@@ -654,6 +687,14 @@ export function CropStage({
                   >
                     <SideSawTeeth orientation="horizontal" offsetPx={canvasX} />
                     <div className="saw-jog-sheen horizontal" aria-hidden="true" />
+                    {sparkAxisX && (
+                      <div className="saw-sparks-layer horizontal" aria-hidden="true">
+                        <i className="saw-spark sp1" />
+                        <i className="saw-spark sp2" />
+                        <i className="saw-spark sp3" />
+                        <i className="saw-spark sp4" />
+                      </div>
+                    )}
                   </div>
 
                   {/* Intersection Corner Reset (0,0) */}
@@ -678,8 +719,18 @@ export function CropStage({
               speed={speed}
               isVideo={!media.isGif}
               playing={playing}
+              loopVideoToAudio={loopVideoToAudio}
               onTogglePlay={togglePlay}
-              onTrimChange={onTrimChange}
+              onToggleLoop={(loop) => onAudioSettingsChange({ loopVideoToAudio: loop })}
+              onTrimChange={(start, end) => {
+                onTrimChange(start, end)
+                if (audioTrack?.isFromVideo) {
+                  onAudioSettingsChange({
+                    audioStart: Math.min(audioTrack.duration, start),
+                    audioEnd: Math.min(audioTrack.duration, end),
+                  })
+                }
+              }}
               onScrubStart={() => {
                 isScrubbingRef.current = true
                 if (videoRef.current && !media.isGif) {
@@ -718,17 +769,16 @@ export function CropStage({
                 audioEnabled={audioEnabled}
                 audioVolume={audioVolume}
                 audioStart={audioStart}
-                loopVideoToAudio={loopVideoToAudio}
+                audioEnd={audioEnd}
                 effectiveVideoDuration={computeEffectiveDuration(trimStart, trimEnd, speed)}
                 currentAudioTime={currentAudioTime}
                 onToggleAudioEnabled={(enabled) => onAudioSettingsChange({ audioEnabled: enabled })}
                 onVolumeChange={(vol) => onAudioSettingsChange({ audioVolume: vol })}
-                onAudioStartChange={(startSec) => {
-                  onAudioSettingsChange({ audioStart: startSec })
+                onAudioTrimChange={(startSec, endSec) => {
+                  onAudioSettingsChange({ audioStart: startSec, audioEnd: endSec })
                   setCurrentAudioTime(startSec)
                   if (audioRef.current) audioRef.current.currentTime = startSec
                 }}
-                onToggleLoopVideo={(loop) => onAudioSettingsChange({ loopVideoToAudio: loop })}
                 onUploadAudioFile={onUploadAudioFile}
                 onRemoveAudio={onRemoveAudio}
                 onRestoreVideoAudio={onRestoreVideoAudio}

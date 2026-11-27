@@ -69,18 +69,27 @@ class StickerFfmpegEngine {
     audioTrack?: AudioTrackInfo | null
   ): Promise<EncodeResult> {
     const baseEffectiveDuration = computeEffectiveDuration(settings.trimStart, settings.trimEnd, settings.speed)
-    const audioAvailableDur =
+    const audioWindowDur =
       audioTrack && settings.audioEnabled
-        ? Math.max(0.1, audioTrack.duration - Math.max(0, settings.audioStart))
+        ? Math.max(
+            0.1,
+            Math.min(
+              10,
+              Math.min(audioTrack.duration, settings.audioEnd || audioTrack.duration) -
+                Math.max(0, settings.audioStart)
+            )
+          )
         : 0
-    const targetDuration =
-      audioTrack && settings.audioEnabled && settings.loopVideoToAudio && audioAvailableDur > baseEffectiveDuration
-        ? Math.min(10, audioAvailableDur)
+    const targetDuration = Math.min(
+      10,
+      audioTrack && settings.audioEnabled && settings.loopVideoToAudio && audioWindowDur > baseEffectiveDuration
+        ? audioWindowDur
         : baseEffectiveDuration
+    )
 
     const attachAudioIfEnabled = async (res: EncodeResult): Promise<EncodeResult> => {
       if (!audioTrack || !settings.audioEnabled) return res
-      const audioTargetDur = Math.max(0.1, Math.min(res.durationSec, audioAvailableDur, 10))
+      const audioTargetDur = Math.max(0.1, Math.min(res.durationSec, audioWindowDur, 10))
       try {
         callbacks.onLog(`> Encoding synchronized OGG/Opus audio (${audioTargetDur.toFixed(2)}s, vol ${Math.round(settings.audioVolume * 100)}%)...`)
         const { oggBlob, durationSec: audDur } = await encodeAudioToOggOpus(

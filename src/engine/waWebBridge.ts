@@ -1,5 +1,12 @@
 export async function pingShroudExtension(timeoutMs = 500): Promise<boolean> {
   if (typeof window === 'undefined') return false
+  try {
+    if (document.documentElement?.dataset?.shroudExt) {
+      return true
+    }
+  } catch {
+    // ignore
+  }
   return new Promise((resolve) => {
     let settled = false
     const onMsg = (ev: MessageEvent) => {

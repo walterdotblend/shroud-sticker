@@ -38,6 +38,7 @@ const baseSettings: StickerSettings = {
   audioEnabled: false,
   audioVolume: 1,
   audioStart: 0,
+  audioEnd: 4,
   loopVideoToAudio: false,
 }
 

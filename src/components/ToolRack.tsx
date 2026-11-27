@@ -282,76 +282,89 @@ export function ToolRack({
                 aria-pressed={settings.flipH}
               >
                 <span className="mirror-arch-frame" aria-hidden="true">
-                  <svg viewBox="0 0 36 86" className="mirror-arch-svg">
+                  <svg viewBox="0 0 48 96" className="mirror-arch-svg">
                     <defs>
-                      <linearGradient id="mirrorLeftGlass" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#352026" />
-                        <stop offset="100%" stopColor="#0d080a" />
+                      <linearGradient id="mirrorIntactGlass" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#46383e" />
+                        <stop offset="45%" stopColor="#1b1418" />
+                        <stop offset="100%" stopColor="#090608" />
                       </linearGradient>
-                      <linearGradient id="mirrorRightShatter" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor={settings.flipH ? '#ff4d5a' : '#2c151a'} stopOpacity="0.9" />
-                        <stop offset="55%" stopColor={settings.flipH ? '#8b1922' : '#14090c'} stopOpacity="0.95" />
-                        <stop offset="100%" stopColor="#080507" />
-                      </linearGradient>
+                      <radialGradient id="mirrorShatterGlow" cx="50%" cy="42%" r="58%">
+                        <stop offset="0%" stopColor="#ff4d5a" stopOpacity="0.85" />
+                        <stop offset="55%" stopColor="#7a141d" stopOpacity="0.92" />
+                        <stop offset="100%" stopColor="#090507" />
+                      </radialGradient>
                     </defs>
 
-                    {/* Left intact half of the gothic mirror */}
+                    {/* Top Gothic Crown Finial */}
                     <path
-                      d="M18 4 C9 13 4 24 4 38 L4 80 L18 80 Z"
-                      fill="url(#mirrorLeftGlass)"
-                      stroke={settings.flipH ? '#e6c2c2' : '#7a3b42'}
-                      strokeWidth="1.4"
+                      d="M24 2 L28 9 L24 12 L20 9 Z"
+                      fill={settings.flipH ? '#cc3540' : '#4c272c'}
+                      stroke={settings.flipH ? '#ffe4e6' : '#8f5259'}
+                      strokeWidth="1"
                     />
 
-                    {/* Right shattered half (glows crimson when active) */}
+                    {/* Ornate Wide Oval Mirror Frame */}
+                    <ellipse
+                      cx="24"
+                      cy="42"
+                      rx="18"
+                      ry="28"
+                      fill="#120b0e"
+                      stroke={settings.flipH ? '#ffe4e6' : '#9c5a62'}
+                      strokeWidth="2"
+                    />
+
+                    {/* Inner Mirror Glass (Intact by default, Shattered when active) */}
+                    <ellipse
+                      cx="24"
+                      cy="42"
+                      rx="14.5"
+                      ry="24.5"
+                      fill={settings.flipH ? 'url(#mirrorShatterGlow)' : 'url(#mirrorIntactGlass)'}
+                      stroke={settings.flipH ? '#ff8e98' : '#5e353b'}
+                      strokeWidth="1"
+                    />
+
+                    {!settings.flipH ? (
+                      /* Intact smooth glass reflection streaks */
+                      <>
+                        <line x1="14" y1="30" x2="25" y2="19" stroke="rgba(255,255,255,0.45)" strokeWidth="1.6" strokeLinecap="round" />
+                        <line x1="16" y1="36" x2="29" y2="23" stroke="rgba(255,255,255,0.22)" strokeWidth="1.2" strokeLinecap="round" />
+                        <line x1="20" y1="58" x2="32" y2="46" stroke="rgba(255,255,255,0.16)" strokeWidth="1" strokeLinecap="round" />
+                      </>
+                    ) : (
+                      /* Shattered glass cracks radiating from impact center */
+                      <>
+                        <circle cx="24" cy="40" r="2.2" fill="#ffffff" />
+                        <polyline points="24,40 16,24 12,21" fill="none" stroke="#ffe4e6" strokeWidth="1.2" />
+                        <polyline points="24,40 33,22 36,27" fill="none" stroke="#ffe4e6" strokeWidth="1.2" />
+                        <polyline points="24,40 11,42 13,52" fill="none" stroke="#ffd1d6" strokeWidth="1.1" />
+                        <polyline points="24,40 37,43 33,57" fill="none" stroke="#ffd1d6" strokeWidth="1.1" />
+                        <polyline points="24,40 22,58 26,65" fill="none" stroke="#ffe4e6" strokeWidth="1.2" />
+                        <line x1="16" y1="24" x2="29" y2="29" stroke="#ff9aa4" strokeWidth="0.9" />
+                        <line x1="15" y1="47" x2="31" y2="51" stroke="#ff9aa4" strokeWidth="0.9" />
+                      </>
+                    )}
+
+                    {/* Hand-Mirror Neck & Handle Base */}
                     <path
-                      d="M18 4 C27 13 32 24 32 38 L32 80 L18 80 Z"
-                      fill="url(#mirrorRightShatter)"
+                      d="M20 69 L28 69 L26.5 92 L24 94 L21.5 92 Z"
+                      fill={settings.flipH ? '#7a141d' : '#261418'}
                       stroke={settings.flipH ? '#ffe4e6' : '#7a3b42'}
-                      strokeWidth="1.4"
-                    />
-
-                    {/* Center vertical fracture seam */}
-                    <polyline
-                      points="18,5 17,18 19,31 17,45 19,60 18,79"
-                      fill="none"
-                      stroke={settings.flipH ? '#ffffff' : '#c29b9d'}
                       strokeWidth="1.4"
                       strokeLinejoin="round"
                     />
-
-                    {/* Jagged shattered glass cracks radiating on the right side */}
-                    <polyline
-                      points="18,29 25,22 31,26"
-                      fill="none"
-                      stroke={settings.flipH ? '#ffd1d6' : '#8f5259'}
-                      strokeWidth="1.1"
-                    />
-                    <polyline
-                      points="18,43 26,40 32,48"
-                      fill="none"
-                      stroke={settings.flipH ? '#ffd1d6' : '#8f5259'}
-                      strokeWidth="1.1"
-                    />
-                    <polyline
-                      points="18,57 24,63 31,61"
-                      fill="none"
-                      stroke={settings.flipH ? '#ffd1d6' : '#8f5259'}
-                      strokeWidth="1.1"
-                    />
-                    <line
-                      x1="25"
-                      y1="22"
-                      x2="26"
-                      y2="40"
-                      stroke={settings.flipH ? '#ff9aa4' : '#633339'}
-                      strokeWidth="0.9"
-                    />
-
-                    {/* Subtle intact mirror reflection sheen on left half */}
-                    <line x1="8" y1="24" x2="14" y2="14" stroke="rgba(255,255,255,0.4)" strokeWidth="1.2" strokeLinecap="round" />
                   </svg>
                 </span>
+                {settings.flipH && (
+                  <span className="mirror-sparks" aria-hidden="true">
+                    <i className="m-spark ms1" />
+                    <i className="m-spark ms2" />
+                    <i className="m-spark ms3" />
+                    <i className="m-spark ms4" />
+                  </span>
+                )}
               </button>
               <div className="vial-meta">
                 <span className="vial-label">{t.mirrorLabel}</span>
@@ -553,7 +566,16 @@ export function ToolRack({
             {waSending ? t.sendToWaWebSending : t.sendToWaWebBtn}
           </button>
           {waSendStatus && <div className="p2p-status-badge">{waSendStatus}</div>}
-          {!waExtAvailable && <p className="muted-meta">{t.waExtMissingHint}</p>}
+          {!waExtAvailable && (
+            <a
+              href={`${import.meta.env.BASE_URL}shroud-extension.zip`}
+              download="shroud-extension.zip"
+              className="btn-secondary ext-download-btn"
+            >
+              <Download size={13} />
+              {t.downloadExtBtn}
+            </a>
+          )}
         </div>
 
         {qrDataUrl && (

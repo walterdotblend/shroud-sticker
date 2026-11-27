@@ -26,7 +26,7 @@ export function parseFfmpegTime(line: string): number | null {
 export function computeEffectiveDuration(trimStart: number, trimEnd: number, speed: number): number {
   const raw = Math.max(0.1, trimEnd - trimStart)
   const safeSpeed = Math.max(0.1, Math.min(8, speed))
-  return raw / safeSpeed
+  return Math.min(10, raw / safeSpeed)
 }
 
 export function computeMaxAllowedQuality(

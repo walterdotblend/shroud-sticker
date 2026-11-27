@@ -45,6 +45,7 @@ export interface StickerSettings {
   audioEnabled: boolean
   audioVolume: number
   audioStart: number
+  audioEnd: number
   loopVideoToAudio: boolean
 }
 

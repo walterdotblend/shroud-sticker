@@ -136,6 +136,7 @@ export interface Translations {
   waTargetActive: string
   waOpenForward: string
   waExtMissingHint: string
+  downloadExtBtn: string
 }
 
 const en: Translations = {
@@ -263,7 +264,8 @@ const en: Translations = {
   waTargetSelf: 'My Self-Chat (Message Yourself)',
   waTargetActive: 'Currently Open Chat',
   waOpenForward: 'Open Forward dialog after sending',
-  waExtMissingHint: 'Requires the SHROUD Chrome/Edge extension (load/reload extension/ folder) + WhatsApp Web open.',
+  waExtMissingHint: 'Extension not detected. Download and install it in Chrome/Edge, then refresh this page.',
+  downloadExtBtn: 'Download SHROUD Extension (.zip)',
 }
 
 const es: Translations = {
@@ -391,7 +393,8 @@ const es: Translations = {
   waTargetSelf: 'Mi Chat Propio (Mensajes contigo)',
   waTargetActive: 'Chat Abierto Actualmente',
   waOpenForward: 'Abrir diálogo Reenviar al terminar',
-  waExtMissingHint: 'Requiere la extensión de SHROUD en Chrome/Edge (carpeta extension/) + WhatsApp Web abierto.',
+  waExtMissingHint: 'Extensión no detectada. Descárgala e instálala en Chrome/Edge y recarga esta página.',
+  downloadExtBtn: 'Descargar Extensión SHROUD (.zip)',
 }
 
 const pt: Translations = {
@@ -519,7 +522,8 @@ const pt: Translations = {
   waTargetSelf: 'Meu Próprio Chat',
   waTargetActive: 'Chat Aberto Atual',
   waOpenForward: 'Abrir Encaminhar após enviar',
-  waExtMissingHint: 'Requer a extensão SHROUD no Chrome/Edge (pasta extension/) + WhatsApp Web aberto.',
+  waExtMissingHint: 'Extensão não detectada. Baixe e instale no Chrome/Edge e recarregue esta página.',
+  downloadExtBtn: 'Baixar Extensão SHROUD (.zip)',
 }
 
 const fr: Translations = {
@@ -647,7 +651,8 @@ const fr: Translations = {
   waTargetSelf: 'Mon propre chat',
   waTargetActive: 'Discussion ouverte',
   waOpenForward: 'Ouvrir Transférer après l’envoi',
-  waExtMissingHint: 'Nécessite l’extension SHROUD Chrome/Edge (dossier extension/) + WhatsApp Web ouvert.',
+  waExtMissingHint: 'Extension non détectée. Téléchargez-la et installez-la dans Chrome/Edge, puis actualisez.',
+  downloadExtBtn: 'Télécharger l’extension SHROUD (.zip)',
 }
 
 const de: Translations = {
@@ -775,7 +780,8 @@ const de: Translations = {
   waTargetSelf: 'Eigener Chat (Notiz an mich)',
   waTargetActive: 'Aktuell geöffneter Chat',
   waOpenForward: 'Weiterleiten-Dialog nach Senden öffnen',
-  waExtMissingHint: 'Erfordert die SHROUD Chrome/Edge-Erweiterung (Ordner extension/) + geöffnetes WhatsApp Web.',
+  waExtMissingHint: 'Erweiterung nicht erkannt. In Chrome/Edge herunterladen, installieren und Seite neu laden.',
+  downloadExtBtn: 'SHROUD-Erweiterung herunterladen (.zip)',
 }
 
 const ja: Translations = {
@@ -903,7 +909,8 @@ const ja: Translations = {
   waTargetSelf: '自分宛てのチャット',
   waTargetActive: '現在開いているチャット',
   waOpenForward: '送信後に転送画面を開く',
-  waExtMissingHint: 'SHROUD拡張機能（extension/フォルダ）とWhatsApp Webのタブが必要です。',
+  waExtMissingHint: '拡張機能が検出されませんでした。ダウンロードしてChrome/Edgeに読み込み、ページを再読み込みしてください。',
+  downloadExtBtn: 'SHROUD拡張機能をダウンロード (.zip)',
 }
 
 const ru: Translations = {
@@ -1031,7 +1038,8 @@ const ru: Translations = {
   waTargetSelf: 'Чат с самим собой',
   waTargetActive: 'Текущий открытый чат',
   waOpenForward: 'Открыть окно пересылки после отправки',
-  waExtMissingHint: 'Требуется расширение SHROUD для Chrome/Edge (папка extension/) + открытый WhatsApp Web.',
+  waExtMissingHint: 'Расширение не найдено. Скачайте и установите его в Chrome/Edge, затем обновите страницу.',
+  downloadExtBtn: 'Скачать расширение SHROUD (.zip)',
 }
 
 const DICTIONARIES: Record<LangCode, Translations> = { en, es, pt, fr, de, ja, ru }

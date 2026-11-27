@@ -164,13 +164,17 @@ export async function encodeStickerNative(
   targetDurationOverride?: number
 ): Promise<EncodeResult> {
   const size = settings.targetSize || 512
-  const trimDuration = Math.max(0.1, settings.trimEnd - settings.trimStart)
-  const baseEffectiveDuration = computeEffectiveDuration(settings.trimStart, settings.trimEnd, settings.speed)
-  const finalDuration =
-    targetDurationOverride && targetDurationOverride > baseEffectiveDuration + 0.05
-      ? Math.min(10, targetDurationOverride)
-      : baseEffectiveDuration
-  const loopCycles = finalDuration / Math.max(0.1, baseEffectiveDuration)
+  const actualTrimEnd = Math.min(media.duration, settings.trimEnd)
+  const trimDuration = Math.max(0.1, actualTrimEnd - settings.trimStart)
+  const singleCycleEffective = Math.max(0.1, trimDuration / Math.max(0.1, Math.min(8, settings.speed)))
+  const requestedEffective = computeEffectiveDuration(settings.trimStart, settings.trimEnd, settings.speed)
+  const finalDuration = Math.min(
+    10,
+    targetDurationOverride && targetDurationOverride > singleCycleEffective + 0.05
+      ? targetDurationOverride
+      : Math.max(singleCycleEffective, requestedEffective)
+  )
+  const loopCycles = finalDuration / Math.max(0.1, singleCycleEffective)
   const cursed = Math.max(0, Math.min(100, settings.cursedLevel || 0))
 
   callbacks.onLog('> Using Fast Native WebP Muxer (0 MB download, GPU Canvas + C++ libwebp)...')
@@ -178,7 +182,7 @@ export async function encodeStickerNative(
 
   const maxAllowedFps = Math.max(8, Math.min(45, media.sourceFps || 30))
   const baseFps = Math.max(8, Math.min(maxAllowedFps, Math.round(settings.fps)))
-  const totalBaseFrames = Math.max(2, Math.min(150, Math.round(baseEffectiveDuration * baseFps)))
+  const totalBaseFrames = Math.max(2, Math.min(150, Math.round(singleCycleEffective * baseFps)))
   const renderedCanvases: HTMLCanvasElement[] = []
 
   const lower = media.name.toLowerCase()

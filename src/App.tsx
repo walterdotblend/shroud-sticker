@@ -64,6 +64,7 @@ const INITIAL_SETTINGS: StickerSettings = {
   audioEnabled: false,
   audioVolume: 1,
   audioStart: 0,
+  audioEnd: 6,
   loopVideoToAudio: false,
 }
 
@@ -161,9 +162,23 @@ export function App() {
 
   // Detect SHROUD Chrome/Edge Extension for direct WhatsApp Web Sound Sticker Bridge
   useEffect(() => {
-    pingShroudExtension(600).then((ok) => {
-      if (ok) setWaExtAvailable(true)
-    })
+    const checkExt = () => {
+      pingShroudExtension(600).then((ok) => {
+        if (ok) setWaExtAvailable(true)
+      })
+    }
+    checkExt()
+    const onMsg = (ev: MessageEvent) => {
+      if (ev.source === window && ev.data?.__shroudExt === 'PONG') {
+        setWaExtAvailable(true)
+      }
+    }
+    window.addEventListener('message', onMsg)
+    window.addEventListener('focus', checkExt)
+    return () => {
+      window.removeEventListener('message', onMsg)
+      window.removeEventListener('focus', checkExt)
+    }
   }, [])
 
   // Non-blocking visit telemetry to Zylo Central Panel (once per session)
@@ -263,6 +278,9 @@ export function App() {
         audioEnabled: !!probedAudio,
         audioVolume: 1,
         audioStart: 0,
+        audioEnd: probedAudio
+          ? Number(Math.min(probedAudio.duration, info.duration, WHATSAPP_MAX_DURATION_SEC).toFixed(2))
+          : 0,
         loopVideoToAudio: false,
       }))
       setStep(2)
@@ -285,12 +303,16 @@ export function App() {
       return
     }
     setAudioTrack(probed)
-    setSettings((prev) => ({
-      ...prev,
-      audioEnabled: true,
-      audioStart: 0,
-      audioVolume: 1,
-    }))
+    setSettings((prev) => {
+      const vidDur = Math.min(WHATSAPP_MAX_DURATION_SEC, Math.max(0.2, (prev.trimEnd - prev.trimStart) / Math.max(0.1, prev.speed)))
+      return {
+        ...prev,
+        audioEnabled: true,
+        audioStart: 0,
+        audioEnd: Number(Math.min(probed.duration, vidDur, WHATSAPP_MAX_DURATION_SEC).toFixed(2)),
+        audioVolume: 1,
+      }
+    })
     appendLog(`> Custom audio loaded: ${probed.name} (${probed.duration.toFixed(2)}s)`)
   }
 
@@ -306,7 +328,8 @@ export function App() {
     setSettings((prev) => ({
       ...prev,
       audioEnabled: true,
-      audioStart: prev.trimStart,
+      audioStart: Math.min(videoOriginalAudio.duration, prev.trimStart),
+      audioEnd: Math.min(videoOriginalAudio.duration, prev.trimEnd),
       loopVideoToAudio: false,
     }))
     appendLog('> Restored original video audio.')
@@ -449,7 +472,8 @@ export function App() {
     try {
       const hasExt = waExtAvailable || (await pingShroudExtension(600))
       if (!hasExt) {
-        setWaSendStatus(t.waExtMissingHint)
+        setWaExtAvailable(false)
+        setWaSendStatus(null)
         return
       }
       setWaExtAvailable(true)
@@ -730,6 +754,7 @@ export function App() {
               audioEnabled={settings.audioEnabled}
               audioVolume={settings.audioVolume}
               audioStart={settings.audioStart}
+              audioEnd={settings.audioEnd}
               loopVideoToAudio={settings.loopVideoToAudio}
               result={result}
               viewMode={viewMode}
