@@ -102,7 +102,7 @@ export function extractMediaUrlFromHtml(html: string, baseUrl: string): string |
 
   // 2. Direct Tenor / Giphy / Klipy / CDN mp4 or gif URLs embedded in HTML/JSON
   const cdnMatch =
-    /https?:\/\/(?:media\d*\.(?:tenor\.com|giphy\.com)|static\.klipy\.com)\/[^\s"'<>\\]+\.(?:mp4|webm|gif|webp)(?:\?[^\s"'<>\\]*)?/i.exec(
+    /https?:\/\/(?:media\d*\.(?:tenor\.com|giphy\.com)|[a-z0-9.-]*klipy\.com)\/[^\s"'<>\\]+\.(?:mp4|webm|gif|webp)(?:\?[^\s"'<>\\]*)?/i.exec(
       html
     )
   if (cdnMatch?.[0]) {
