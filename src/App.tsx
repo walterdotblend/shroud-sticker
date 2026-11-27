@@ -6,6 +6,7 @@ import { CropStage } from './components/CropStage'
 import { PackSidebar } from './components/PackSidebar'
 import { ToolRack, type WizardStep } from './components/ToolRack'
 import { stickerEngine } from './engine/ffmpegClient'
+import { computeMaxAllowedQuality } from './engine/ffmpegArgs'
 import { probeMediaFile } from './engine/mediaProbe'
 import { probeAudioSource } from './engine/oggOpusEncoder'
 import { loadSavedPackState, savePackState } from './engine/packStorage'
@@ -261,28 +262,34 @@ export function App() {
       setVideoOriginalAudio(probedAudio)
       setAudioTrack(probedAudio)
 
-      setSettings((prev) => ({
-        ...prev,
-        trimStart: 0,
-        trimEnd: Number(Math.min(info.duration, WHATSAPP_MAX_DURATION_SEC).toFixed(2)),
-        speed: 1,
-        reverse: false,
-        crop: null,
-        canvasScale: 1,
-        canvasX: 0,
-        canvasY: 0,
-        rotationDeg: 0,
-        flipH: false,
-        fps: Math.min(15, info.sourceFps),
-        cursedLevel: 0,
-        audioEnabled: !!probedAudio,
-        audioVolume: 1,
-        audioStart: 0,
-        audioEnd: probedAudio
-          ? Number(Math.min(probedAudio.duration, info.duration, WHATSAPP_MAX_DURATION_SEC).toFixed(2))
-          : 0,
-        loopVideoToAudio: false,
-      }))
+      setSettings((prev) => {
+        const maxFps = Math.max(8, Math.min(45, info.sourceFps))
+        const initTrimEnd = Number(Math.min(info.duration, WHATSAPP_MAX_DURATION_SEC).toFixed(2))
+        const maxQ = computeMaxAllowedQuality(maxFps, initTrimEnd, prev.removeBg)
+        return {
+          ...prev,
+          trimStart: 0,
+          trimEnd: initTrimEnd,
+          speed: 1,
+          reverse: false,
+          crop: null,
+          canvasScale: 1,
+          canvasX: 0,
+          canvasY: 0,
+          rotationDeg: 0,
+          flipH: false,
+          fps: maxFps,
+          quality: maxQ,
+          cursedLevel: 0,
+          audioEnabled: !!probedAudio,
+          audioVolume: 1,
+          audioStart: 0,
+          audioEnd: probedAudio
+            ? Number(Math.min(probedAudio.duration, info.duration, WHATSAPP_MAX_DURATION_SEC).toFixed(2))
+            : 0,
+          loopVideoToAudio: false,
+        }
+      })
       setStep(2)
       appendLog(
         `> Media loaded: ${info.name} (${info.width}×${info.height}, ${info.duration.toFixed(2)}s, ${(

@@ -192,12 +192,17 @@ export async function encodeAudioToOggOpus(
 
   const decoded = await decodeAudioFile(file)
   const safeStart = Math.max(0, Math.min(Math.max(0, decoded.duration - 0.1), startSec))
-  const safeDur = Math.max(0.1, Math.min(10, Math.min(durationSec, decoded.duration - safeStart)))
+  const safeDur = Math.max(0.1, Math.min(10, durationSec))
 
   const sampleCount = Math.max(1, Math.round(safeDur * SAMPLE_RATE))
   const offline = new OfflineAudioContext(1, sampleCount, SAMPLE_RATE)
   const src = offline.createBufferSource()
   src.buffer = decoded
+  if (safeDur > decoded.duration - safeStart + 0.05) {
+    src.loop = true
+    src.loopStart = safeStart
+    src.loopEnd = decoded.duration
+  }
 
   const gain = offline.createGain()
   gain.gain.value = Math.max(0, Math.min(2.5, volume))

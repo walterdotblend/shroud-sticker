@@ -83,6 +83,14 @@ export function ToolRack({
   const [urlInput, setUrlInput] = useState('')
   const [dragOver, setDragOver] = useState(false)
   const [waTargetMode, setWaTargetMode] = useState<'self' | 'active'>('self')
+  const [forgePulse, setForgePulse] = useState(false)
+  const forgePulseTimer = useRef<number | null>(null)
+
+  const triggerForgeNudge = () => {
+    setForgePulse(true)
+    if (forgePulseTimer.current) clearTimeout(forgePulseTimer.current)
+    forgePulseTimer.current = window.setTimeout(() => setForgePulse(false), 1000)
+  }
 
   const effectiveDuration = computeEffectiveDuration(settings.trimStart, settings.trimEnd, settings.speed)
   const durationTooLong = effectiveDuration > WHATSAPP_MAX_DURATION_SEC
@@ -446,10 +454,13 @@ export function ToolRack({
               const nextMaxQ = computeMaxAllowedQuality(clampedFps, effectiveDuration, settings.removeBg)
               onSettingsChange({
                 fps: clampedFps,
-                quality: Math.min(settings.quality, nextMaxQ),
+                quality: clampedFps < activeFps ? nextMaxQ : Math.min(settings.quality, nextMaxQ),
               })
             }}
-            onReset={() => onSettingsChange({ fps: Math.min(15, maxSourceFps) })}
+            onReset={() => {
+              const nextMaxQ = computeMaxAllowedQuality(maxSourceFps, effectiveDuration, settings.removeBg)
+              onSettingsChange({ fps: maxSourceFps, quality: nextMaxQ })
+            }}
           />
           <VialControl
             label={`${t.qualityLabel.replace(':', '')} (≤${maxAllowedQuality}%)`}
@@ -508,13 +519,27 @@ export function ToolRack({
           )}
         </div>
 
-        <button type="button" className="btn-crimson forge-main-btn" disabled={!media || encoding} onClick={onForge}>
+        <button
+          type="button"
+          className={`btn-crimson forge-main-btn ${forgePulse ? 'forge-nudge-glow' : ''}`}
+          disabled={!media || encoding}
+          onClick={onForge}
+        >
           <Flame size={16} />
           {encoding ? t.forgingButton : t.forgeButton}
         </button>
 
         {/* 2 Columns below Forge: PC (WhatsApp Web) on Left, Mobile (.webp / Pack / QR) on Right */}
-        <div className="forge-split-cols">
+        <div
+          className={`forge-split-cols ${!result ? 'needs-forge' : ''}`}
+          onClickCapture={(e) => {
+            if (!result) {
+              e.preventDefault()
+              e.stopPropagation()
+              triggerForgeNudge()
+            }
+          }}
+        >
           {/* Column 1 (Left): PC (WhatsApp Web) */}
           <div className="forge-platform-col">
             <div className="forge-col-header">

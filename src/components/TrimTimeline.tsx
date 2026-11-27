@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 import { Pause, Play, Repeat } from 'lucide-react'
-import { computeEffectiveDuration } from '../engine/ffmpegArgs'
 import { WHATSAPP_MAX_DURATION_SEC } from '../engine/types'
 import type { Translations } from '../i18n/translations'
 
@@ -20,6 +19,18 @@ interface TrimTimelineProps {
   onScrubStart: () => void
   onScrub: (timeSec: number) => void
   onScrubEnd?: () => void
+}
+
+function snapToLoopBoundaries(time: number, unitDur: number, enabled: boolean): number {
+  if (!enabled || unitDur < 0.2) return time
+  const k = Math.round(time / unitDur)
+  if (k >= 1) {
+    const boundary = k * unitDur
+    if (Math.abs(time - boundary) <= 0.18) {
+      return boundary
+    }
+  }
+  return time
 }
 
 /**
@@ -88,12 +99,16 @@ export function TrimTimeline({
   const startPct = Math.max(0, Math.min(100, ((trimStart - windowStart) / windowLen) * 100))
   const endPct = Math.max(startPct, Math.min(100, ((trimEnd - windowStart) / windowLen) * 100))
   const playPct = Math.max(0, Math.min(100, ((currentTime - windowStart) / windowLen) * 100))
-  const loopMarkerPct =
-    canLoopExtend && loopVideoToAudio
-      ? Math.max(0, Math.min(100, ((duration - windowStart) / windowLen) * 100))
-      : null
 
-  const effectiveDuration = computeEffectiveDuration(trimStart, trimEnd, speed)
+  const loopBoundaryPcts: number[] = []
+  if (canLoopExtend && loopVideoToAudio && duration >= 0.2) {
+    for (let k = 1; k * duration < totalMax - 0.05; k++) {
+      const tMark = k * duration
+      if (tMark >= windowStart && tMark <= windowEnd) {
+        loopBoundaryPcts.push(((tMark - windowStart) / windowLen) * 100)
+      }
+    }
+  }
 
   const clientXToTime = (clientX: number, winStart = windowStart): number => {
     const rect = trackRef.current?.getBoundingClientRect()
@@ -129,14 +144,16 @@ export function TrimTimeline({
       const time = clientXToTime(e.clientX, d.origWinStart)
       onScrub(Math.min(duration, Math.max(0, time)))
     } else if (d.which === 'start') {
-      const time = clientXToTime(e.clientX, d.origWinStart)
+      const rawTime = clientXToTime(e.clientX, d.origWinStart)
+      const time = snapToLoopBoundaries(rawTime, duration, canLoopExtend && loopVideoToAudio)
       const minStart = Math.max(0, trimEnd - maxSourceSpan)
       const nextStart = Math.max(minStart, Math.min(trimEnd - 0.1, time))
       const rounded = Number(nextStart.toFixed(2))
       onTrimChange(rounded, trimEnd)
       onScrub(Math.min(duration, rounded))
     } else if (d.which === 'end') {
-      const time = clientXToTime(e.clientX, d.origWinStart)
+      const rawTime = clientXToTime(e.clientX, d.origWinStart)
+      const time = snapToLoopBoundaries(rawTime, duration, canLoopExtend && loopVideoToAudio)
       const maxEnd = Math.min(totalMax, trimStart + maxSourceSpan)
       const nextEnd = Math.min(maxEnd, Math.max(trimStart + 0.1, time))
       const rounded = Number(nextEnd.toFixed(2))
@@ -248,25 +265,23 @@ export function TrimTimeline({
         </div>
 
         <div className="trim-center-badges">
-          <span className="duration-badge ok">
-            {t.finalDuration} {effectiveDuration.toFixed(2)}s ✓
-          </span>
           {canLoopExtend && (
-            <label className="checkbox-inline loop-chip-toggle" title={t.loopVideoToAudioHint}>
-              <input
-                type="checkbox"
-                checked={loopVideoToAudio}
-                onChange={(e) => {
-                  const checked = e.target.checked
-                  onToggleLoop(checked)
-                  if (!checked && trimEnd > duration) {
-                    onTrimChange(Math.min(trimStart, Math.max(0, duration - 0.2)), Number(duration.toFixed(2)))
-                  }
-                }}
-              />
-              <Repeat size={10} className="icon-crimson" />
-              <span>Loop</span>
-            </label>
+            <button
+              type="button"
+              className={`loop-big-btn ${loopVideoToAudio ? 'active' : ''}`}
+              title={t.loopVideoToAudioHint}
+              aria-pressed={loopVideoToAudio}
+              onClick={() => {
+                const next = !loopVideoToAudio
+                onToggleLoop(next)
+                if (!next && trimEnd > duration) {
+                  onTrimChange(Math.min(trimStart, Math.max(0, duration - 0.2)), Number(duration.toFixed(2)))
+                }
+              }}
+            >
+              <Repeat size={12} />
+              <span>LOOP</span>
+            </button>
           )}
         </div>
 
@@ -329,13 +344,14 @@ export function TrimTimeline({
           onPointerUp={endDrag}
           onPointerCancel={endDrag}
         >
-          {loopMarkerPct !== null && (
+          {loopBoundaryPcts.map((pct, idx) => (
             <div
+              key={idx}
               className="trim-loop-boundary"
-              style={{ left: `${loopMarkerPct}%` }}
-              title={`Original end (${duration.toFixed(2)}s)`}
+              style={{ left: `${pct}%` }}
+              title={`Loop ${idx + 1} (${((idx + 1) * duration).toFixed(2)}s)`}
             />
-          )}
+          ))}
           <div
             className="trim-selection trim-selection-draggable"
             style={{ left: `${startPct}%`, width: `${Math.max(1.5, endPct - startPct)}%` }}

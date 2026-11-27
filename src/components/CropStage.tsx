@@ -782,6 +782,7 @@ export function CropStage({
                 audioVolume={audioVolume}
                 audioStart={audioStart}
                 audioEnd={audioEnd}
+                loopVideoToAudio={loopVideoToAudio}
                 effectiveVideoDuration={computeEffectiveDuration(trimStart, trimEnd, speed)}
                 currentAudioTime={currentAudioTime}
                 onToggleAudioEnabled={(enabled) => onAudioSettingsChange({ audioEnabled: enabled })}

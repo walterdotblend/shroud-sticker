@@ -11,6 +11,7 @@ interface AudioTrackBarProps {
   audioVolume: number
   audioStart: number
   audioEnd: number
+  loopVideoToAudio: boolean
   effectiveVideoDuration: number
   currentAudioTime: number
   onToggleAudioEnabled: (enabled: boolean) => void
@@ -22,6 +23,18 @@ interface AudioTrackBarProps {
   onScrubStart: () => void
   onScrubAudioTime: (audioSec: number) => void
   onScrubEnd: () => void
+}
+
+function snapToAudioLoop(time: number, unitDur: number, enabled: boolean): number {
+  if (!enabled || unitDur < 0.2) return time
+  const k = Math.round(time / unitDur)
+  if (k >= 1) {
+    const boundary = k * unitDur
+    if (Math.abs(time - boundary) <= 0.18) {
+      return boundary
+    }
+  }
+  return time
 }
 
 /**
@@ -36,6 +49,7 @@ export function AudioTrackBar({
   audioVolume,
   audioStart,
   audioEnd,
+  loopVideoToAudio,
   effectiveVideoDuration,
   currentAudioTime,
   onToggleAudioEnabled,
@@ -58,7 +72,9 @@ export function AudioTrackBar({
     origWinStart: number
   } | null>(null)
 
-  const totalDur = Math.max(0.2, audioTrack?.duration || 1)
+  const srcDur = Math.max(0.2, audioTrack?.duration || 1)
+  const canLoopAudio = srcDur < WHATSAPP_MAX_DURATION_SEC - 0.1 && loopVideoToAudio
+  const totalDur = canLoopAudio ? WHATSAPP_MAX_DURATION_SEC : srcDur
   const maxAudioSpan = Math.min(totalDur, Math.min(WHATSAPP_MAX_DURATION_SEC, Math.max(0.2, effectiveVideoDuration)))
   const windowLen = Math.min(totalDur, WHATSAPP_MAX_DURATION_SEC)
 
@@ -93,8 +109,21 @@ export function AudioTrackBar({
   const endPct = Math.max(startPct, Math.min(100, ((safeEnd - windowStart) / windowLen) * 100))
   const playPct = Math.max(0, Math.min(100, ((currentAudioTime - windowStart) / windowLen) * 100))
 
-  // Slice waveform peaks to match the visible 10s window
-  const peaks = audioTrack?.peaks || []
+  const loopBoundaryPcts: number[] = []
+  if (canLoopAudio && srcDur >= 0.2) {
+    for (let k = 1; k * srcDur < totalDur - 0.05; k++) {
+      const tMark = k * srcDur
+      if (tMark >= windowStart && tMark <= windowEnd) {
+        loopBoundaryPcts.push(((tMark - windowStart) / windowLen) * 100)
+      }
+    }
+  }
+
+  // Slice waveform peaks (repeating when looped)
+  const basePeaks = audioTrack?.peaks || []
+  const peaks = canLoopAudio && basePeaks.length > 0
+    ? Array.from({ length: Math.round((totalDur / srcDur) * basePeaks.length) }, (_, i) => basePeaks[i % basePeaks.length])
+    : basePeaks
   const peakStartIdx = Math.floor((windowStart / totalDur) * peaks.length)
   const peakEndIdx = Math.max(peakStartIdx + 1, Math.ceil((windowEnd / totalDur) * peaks.length))
   const visiblePeaks = peaks.slice(peakStartIdx, peakEndIdx)
@@ -132,17 +161,19 @@ export function AudioTrackBar({
     if (d.which === 'playhead') {
       onScrubAudioTime(Math.max(0, Math.min(totalDur, clientXToTime(e.clientX, d.origWinStart))))
     } else if (d.which === 'start') {
-      const time = clientXToTime(e.clientX, d.origWinStart)
+      const rawTime = clientXToTime(e.clientX, d.origWinStart)
+      const time = snapToAudioLoop(rawTime, srcDur, canLoopAudio)
       const minStart = Math.max(0, safeEnd - maxAudioSpan)
       const nextStart = Number(Math.max(minStart, Math.min(safeEnd - 0.1, time)).toFixed(2))
       onAudioTrimChange(nextStart, safeEnd)
-      onScrubAudioTime(nextStart)
+      onScrubAudioTime(Math.min(srcDur, nextStart))
     } else if (d.which === 'end') {
-      const time = clientXToTime(e.clientX, d.origWinStart)
+      const rawTime = clientXToTime(e.clientX, d.origWinStart)
+      const time = snapToAudioLoop(rawTime, srcDur, canLoopAudio)
       const maxEnd = Math.min(totalDur, audioStart + maxAudioSpan)
       const nextEnd = Number(Math.min(maxEnd, Math.max(audioStart + 0.1, time)).toFixed(2))
       onAudioTrimChange(audioStart, nextEnd)
-      onScrubAudioTime(nextEnd)
+      onScrubAudioTime(Math.min(srcDur, nextEnd))
     } else if (d.which === 'selection') {
       const dxRatio = (e.clientX - d.startClientX) / trackW
       const span = d.origEnd - d.origStart
@@ -373,6 +404,14 @@ export function AudioTrackBar({
                   />
                 ))}
               </div>
+              {loopBoundaryPcts.map((pct, idx) => (
+                <div
+                  key={idx}
+                  className="trim-loop-boundary"
+                  style={{ left: `${pct}%` }}
+                  title={`Loop ${idx + 1} (${((idx + 1) * srcDur).toFixed(2)}s)`}
+                />
+              ))}
               <div
                 className="trim-selection trim-selection-draggable"
                 style={{ left: `${startPct}%`, width: `${Math.max(1.5, endPct - startPct)}%` }}

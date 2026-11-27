@@ -40,7 +40,8 @@ export function PackSidebar({
   }
 
   return (
-    <aside className="panel pack-sidebar">
+    <div className="right-pack-stack">
+      <aside className="panel pack-sidebar">
       <div className="panel-header">
         <div className="panel-title-group">
           <Package size={14} className="icon-crimson" />
@@ -148,15 +149,18 @@ export function PackSidebar({
           {t.packClear}
         </button>
       </div>
+      </aside>
 
-      <a
-        href={`${import.meta.env.BASE_URL}shroud-extension.zip`}
-        download="shroud-extension.zip"
-        className="btn-secondary ext-download-btn"
-      >
-        <Download size={13} />
-        {t.downloadExtBtn}
-      </a>
-    </aside>
+      <div className="panel ext-download-card">
+        <a
+          href={`${import.meta.env.BASE_URL}shroud-extension.zip`}
+          download="shroud-extension.zip"
+          className="btn-crimson ext-download-btn-lg"
+        >
+          <Download size={16} />
+          <span>{t.downloadExtBtn}</span>
+        </a>
+      </div>
+    </div>
   )
 }
