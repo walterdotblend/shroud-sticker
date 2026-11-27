@@ -100,9 +100,11 @@ export function extractMediaUrlFromHtml(html: string, baseUrl: string): string |
     }
   }
 
-  // 2. Direct Tenor / Giphy / CDN mp4 or gif URLs embedded in HTML/JSON
+  // 2. Direct Tenor / Giphy / Klipy / CDN mp4 or gif URLs embedded in HTML/JSON
   const cdnMatch =
-    /https?:\/\/media\d*\.(?:tenor\.com|giphy\.com)\/[^\s"'<>\\]+\.(?:mp4|webm|gif)/i.exec(html)
+    /https?:\/\/(?:media\d*\.(?:tenor\.com|giphy\.com)|static\.klipy\.com)\/[^\s"'<>\\]+\.(?:mp4|webm|gif|webp)(?:\?[^\s"'<>\\]*)?/i.exec(
+      html
+    )
   if (cdnMatch?.[0]) {
     return cdnMatch[0].replace(/\\u002F/gi, '/')
   }
@@ -248,6 +250,11 @@ export async function downloadMediaFromUrl(
   try {
     response = await fetchWithCorsFallback(targetUrl, onLog)
   } catch {
+    if (/^https?:\/\/(?:www\.)?klipy\.com\/gifs\//i.test(originalUrl)) {
+      throw new Error(
+        'Klipy.com blocks automated downloads (Cloudflare check). Right-click the GIF on Klipy → "Copy image/video address" (static.klipy.com) or use the SHROUD Extension → "Use Current Tab URL" while on Klipy.'
+      )
+    }
     throw new Error(t.errCorsBlocked)
   }
 

@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { Download, Package, Smartphone, Trash2, Upload, X } from 'lucide-react'
+import { Package, Puzzle, Smartphone, Trash2, Upload, X } from 'lucide-react'
 import type { PackStickerItem } from '../engine/wastickers'
 import type { Translations } from '../i18n/translations'
 
@@ -157,7 +157,7 @@ export function PackSidebar({
           download="shroud-extension.zip"
           className="btn-crimson ext-download-btn-lg"
         >
-          <Download size={16} />
+          <Puzzle size={18} />
           <span>{t.downloadExtBtn}</span>
         </a>
       </div>

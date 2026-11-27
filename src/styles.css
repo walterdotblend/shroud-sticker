@@ -2452,19 +2452,29 @@ button:disabled {
   flex-direction: column;
   gap: 12px;
   align-self: start;
+  width: 100%;
+  min-width: 0;
+}
+
+.pack-sidebar,
+.ext-download-card {
+  width: 100%;
 }
 
 .ext-download-card {
-  padding: 10px 12px;
+  padding: 12px 14px;
 }
 
 .ext-download-btn-lg {
   width: 100%;
-  padding: 12px 14px;
+  min-height: 62px;
+  padding: 14px 16px;
+  border-radius: 7px;
   font-size: 12.5px;
   font-weight: 700;
   text-decoration: none;
   text-align: center;
+  gap: 9px;
 }
 
 @keyframes metal-spark-fly {

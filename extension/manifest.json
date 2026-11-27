@@ -3,7 +3,7 @@
   "name": "SHROUD // WhatsApp Sticker Forge & Sound Bridge",
   "version": "1.1.0",
   "description": "Send GIF/video links to SHROUD Sticker Forge and publish animated stickers with sound directly to WhatsApp Web.",
-  "permissions": ["activeTab", "tabs"],
+  "permissions": ["activeTab", "tabs", "scripting"],
   "host_permissions": ["https://web.whatsapp.com/*"],
   "background": {
     "service_worker": "background.js"
