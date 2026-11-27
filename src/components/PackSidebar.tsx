@@ -153,8 +153,9 @@ export function PackSidebar({
 
       <div className="panel ext-download-card">
         <a
-          href={`${import.meta.env.BASE_URL}shroud-extension.zip`}
-          download="shroud-extension.zip"
+          href="https://github.com/walterdotblend/shroud-sticker/releases/latest/download/shroud-extension.zip"
+          target="_blank"
+          rel="noopener noreferrer"
           className="btn-crimson ext-download-btn-lg"
         >
           <Puzzle size={18} />

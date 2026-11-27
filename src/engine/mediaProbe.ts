@@ -26,6 +26,34 @@ export async function probeGifMeta(file: File): Promise<{ duration: number; sour
   }
 }
 
+export async function probeWebpMeta(file: File): Promise<{ duration: number; sourceFps: number }> {
+  try {
+    const ImageDec = (globalThis as unknown as { ImageDecoder?: typeof ImageDecoder }).ImageDecoder
+    if (!ImageDec) return { duration: 4, sourceFps: 15 }
+    const buf = await file.arrayBuffer()
+    const decoder = new ImageDec({ data: buf, type: 'image/webp' })
+    await decoder.tracks.ready
+    const track = decoder.tracks.selectedTrack
+    const frameCount = track?.frameCount || 1
+    if (frameCount <= 1) {
+      decoder.close()
+      return { duration: 3, sourceFps: 15 }
+    }
+    let totalUs = 0
+    for (let i = 0; i < frameCount; i++) {
+      const res = await decoder.decode({ frameIndex: i })
+      totalUs += res.image.duration && res.image.duration > 0 ? res.image.duration : 66667
+      res.image.close()
+    }
+    decoder.close()
+    const duration = Math.max(0.2, totalUs / 1_000_000)
+    const sourceFps = Math.max(5, Math.min(45, Math.round(frameCount / duration)))
+    return { duration: Number(duration.toFixed(2)), sourceFps }
+  } catch {
+    return { duration: 4, sourceFps: 15 }
+  }
+}
+
 function probeImageDimensions(objectUrl: string): Promise<{ width: number; height: number }> {
   return new Promise((resolve, reject) => {
     const img = new Image()
@@ -147,7 +175,7 @@ export async function probeMediaFile(file: File): Promise<MediaInfo> {
         probeImageDimensions(objectUrl),
         lower.endsWith('.gif') || file.type === 'image/gif'
           ? probeGifMeta(file)
-          : Promise.resolve({ duration: 4, sourceFps: 15 }),
+          : probeWebpMeta(file),
       ])
       return {
         name: file.name,

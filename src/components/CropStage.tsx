@@ -730,6 +730,7 @@ export function CropStage({
               currentTime={currentTime}
               speed={speed}
               isVideo={!media.isGif}
+              hasAudio={!!audioTrack && audioEnabled}
               playing={playing}
               loopVideoToAudio={loopVideoToAudio}
               onTogglePlay={togglePlay}

@@ -177,11 +177,16 @@ export function AudioTrackBar({
     } else if (d.which === 'selection') {
       const dxRatio = (e.clientX - d.startClientX) / trackW
       const span = d.origEnd - d.origStart
-      const deltaSec = dxRatio * Math.max(windowLen, totalDur > windowLen ? totalDur * 0.45 : windowLen)
+      const deltaSec = dxRatio * windowLen
       const nextStart = Number(Math.max(0, Math.min(totalDur - span, d.origStart + deltaSec)).toFixed(2))
       const nextEnd = Number((nextStart + span).toFixed(2))
+      if (nextStart < windowStart) {
+        setWindowStart(Math.max(0, nextStart))
+      } else if (nextEnd > windowStart + windowLen) {
+        setWindowStart(Math.min(Math.max(0, totalDur - windowLen), nextEnd - windowLen))
+      }
       onAudioTrimChange(nextStart, nextEnd)
-      onScrubAudioTime(nextStart)
+      onScrubAudioTime(Math.min(srcDur, nextStart))
     }
   }
 
@@ -433,30 +438,6 @@ export function AudioTrackBar({
               />
             </div>
           </div>
-
-          {totalDur > windowLen + 0.05 && (
-            <div className="trim-pan-row">
-              <span className="trim-pan-label">
-                {windowStart.toFixed(1)}s–{windowEnd.toFixed(1)}s / {totalDur.toFixed(1)}s
-              </span>
-              <input
-                type="range"
-                min={0}
-                max={Number((totalDur - windowLen).toFixed(2))}
-                step={0.1}
-                value={Number(windowStart.toFixed(2))}
-                onChange={(e) => {
-                  const nextWs = Number(e.target.value)
-                  const span = safeEnd - audioStart
-                  const clampedStart = Number(Math.max(nextWs, Math.min(nextWs + windowLen - span, audioStart)).toFixed(2))
-                  setWindowStart(nextWs)
-                  onAudioTrimChange(clampedStart, Number((clampedStart + span).toFixed(2)))
-                }}
-                className="crimson-slider trim-pan-slider"
-                aria-label="Pan 10s audio window"
-              />
-            </div>
-          )}
         </>
       )}
     </div>

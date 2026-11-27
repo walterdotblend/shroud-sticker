@@ -11,6 +11,7 @@ interface TrimTimelineProps {
   currentTime: number
   speed: number
   isVideo: boolean
+  hasAudio: boolean
   playing: boolean
   loopVideoToAudio: boolean
   onTogglePlay: () => void
@@ -47,6 +48,7 @@ export function TrimTimeline({
   currentTime,
   speed,
   isVideo,
+  hasAudio,
   playing,
   loopVideoToAudio,
   onTogglePlay,
@@ -162,11 +164,16 @@ export function TrimTimeline({
     } else if (d.which === 'selection') {
       const dxRatio = (e.clientX - d.startClientX) / trackW
       const span = d.origEnd - d.origStart
-      const deltaSec = dxRatio * Math.max(windowLen, totalMax > windowLen ? totalMax * 0.45 : windowLen)
+      const deltaSec = dxRatio * windowLen
       const nextStart = Math.max(0, Math.min(totalMax - span, d.origStart + deltaSec))
       const nextEnd = nextStart + span
       const s = Number(nextStart.toFixed(2))
       const en = Number(nextEnd.toFixed(2))
+      if (s < windowStart) {
+        setWindowStart(Math.max(0, s))
+      } else if (en > windowStart + windowLen) {
+        setWindowStart(Math.min(Math.max(0, totalMax - windowLen), en - windowLen))
+      }
       onTrimChange(s, en)
       onScrub(Math.min(duration, s))
     }
@@ -324,7 +331,7 @@ export function TrimTimeline({
       </div>
 
       <div className="trim-track-row">
-        {isVideo && (
+        {(isVideo || hasAudio) && (
           <button
             type="button"
             className="trim-play-btn"
@@ -373,30 +380,6 @@ export function TrimTimeline({
           />
         </div>
       </div>
-
-      {totalMax > windowLen + 0.05 && (
-        <div className="trim-pan-row">
-          <span className="trim-pan-label">
-            {windowStart.toFixed(1)}s–{windowEnd.toFixed(1)}s / {totalMax.toFixed(1)}s
-          </span>
-          <input
-            type="range"
-            min={0}
-            max={Number((totalMax - windowLen).toFixed(2))}
-            step={0.1}
-            value={Number(windowStart.toFixed(2))}
-            onChange={(e) => {
-              const nextWs = Number(e.target.value)
-              const span = trimEnd - trimStart
-              const clampedStart = Number(Math.max(nextWs, Math.min(nextWs + windowLen - span, trimStart)).toFixed(2))
-              setWindowStart(nextWs)
-              onTrimChange(clampedStart, Number((clampedStart + span).toFixed(2)))
-            }}
-            className="crimson-slider trim-pan-slider"
-            aria-label="Pan 10s window"
-          />
-        </div>
-      )}
     </div>
   )
 }

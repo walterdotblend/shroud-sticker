@@ -130,6 +130,40 @@ async function decodeGifFrames(file: File): Promise<DecodedSourceFrame[]> {
   return frames
 }
 
+async function decodeAnimatedWebpFrames(file: File): Promise<DecodedSourceFrame[] | null> {
+  const ImageDec = (globalThis as unknown as { ImageDecoder?: typeof ImageDecoder }).ImageDecoder
+  if (!ImageDec) return null
+  try {
+    const buf = await file.arrayBuffer()
+    const decoder = new ImageDec({ data: buf, type: 'image/webp' })
+    await decoder.tracks.ready
+    const frameCount = decoder.tracks.selectedTrack?.frameCount || 1
+    if (frameCount <= 1) {
+      decoder.close()
+      return null
+    }
+    const frames: DecodedSourceFrame[] = []
+    let elapsedSec = 0
+    for (let i = 0; i < frameCount; i++) {
+      const res = await decoder.decode({ frameIndex: i })
+      const frame = res.image
+      const c = document.createElement('canvas')
+      c.width = frame.displayWidth || 512
+      c.height = frame.displayHeight || 512
+      const ctx = c.getContext('2d')!
+      ctx.drawImage(frame, 0, 0, c.width, c.height)
+      frames.push({ canvas: c, timeSec: elapsedSec })
+      const durUs = frame.duration && frame.duration > 0 ? frame.duration : 66667
+      elapsedSec += durUs / 1_000_000
+      frame.close()
+    }
+    decoder.close()
+    return frames
+  } catch {
+    return null
+  }
+}
+
 async function seekVideo(video: HTMLVideoElement, timeSec: number): Promise<void> {
   if (Math.abs(video.currentTime - timeSec) < 0.005) return
   return new Promise((resolve) => {
@@ -212,14 +246,30 @@ export async function encodeStickerNative(
       }
     }
   } else if (media.isGif) {
-    // Static or animated WebP input: load via <img>
-    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-      const el = new Image()
-      el.onload = () => resolve(el)
-      el.onerror = reject
-      el.src = media.objectUrl
-    })
-    renderedCanvases.push(drawTransformedFrame(img, media.width, media.height, settings))
+    // Animated or static WebP input: decode all frames via WebCodecs ImageDecoder when animated
+    const webpFrames = await decodeAnimatedWebpFrames(media.file)
+    if (webpFrames && webpFrames.length > 1) {
+      for (let i = 0; i < totalBaseFrames; i++) {
+        const progressIdx = settings.reverse ? totalBaseFrames - 1 - i : i
+        const norm = totalBaseFrames > 1 ? progressIdx / (totalBaseFrames - 1) : 0
+        const targetTime = settings.trimStart + norm * trimDuration
+
+        let chosen = webpFrames[0]
+        for (const wf of webpFrames) {
+          if (wf.timeSec <= targetTime + 0.005) chosen = wf
+          else break
+        }
+        renderedCanvases.push(drawTransformedFrame(chosen.canvas, media.width, media.height, settings))
+      }
+    } else {
+      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const el = new Image()
+        el.onload = () => resolve(el)
+        el.onerror = reject
+        el.src = media.objectUrl
+      })
+      renderedCanvases.push(drawTransformedFrame(img, media.width, media.height, settings))
+    }
   } else {
     // Video input (.mp4, .webm, .mov)
     const video = document.createElement('video')
@@ -309,13 +359,21 @@ export async function encodeStickerNative(
 
   let best = await encodeAt(1, baseFps, settings.quality)
   if (settings.autoCompressWhatsApp && best.muxed.byteLength > settings.maxBytes) {
+    // Step 1: Lower quality FIRST while preserving full selected FPS
     const ratio1 = settings.maxBytes / best.muxed.byteLength
-    const jumpQ = Math.max(4, Math.min(settings.quality - 10, Math.round(settings.quality * ratio1 * 0.68)))
+    const jumpQ = Math.max(8, Math.min(settings.quality - 10, Math.round(settings.quality * ratio1 * 0.65)))
     best = await encodeAt(2, baseFps, jumpQ)
-    if (best.muxed.byteLength > settings.maxBytes) {
+
+    // Step 2: Drop quality to minimum before ever touching FPS
+    if (best.muxed.byteLength > settings.maxBytes && jumpQ > 4) {
+      best = await encodeAt(3, baseFps, 4)
+    }
+
+    // Step 3 (Last resort): Lower FPS only if minimum quality at full FPS still exceeds 500 KB
+    if (best.muxed.byteLength > settings.maxBytes && baseFps > 8) {
       const ratio2 = settings.maxBytes / best.muxed.byteLength
       const jumpFps = Math.max(8, Math.min(baseFps - 2, Math.round(baseFps * ratio2 * 0.88)))
-      best = await encodeAt(3, jumpFps, 8)
+      best = await encodeAt(4, jumpFps, 4)
     }
   }
 
