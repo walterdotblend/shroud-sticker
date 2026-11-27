@@ -207,7 +207,7 @@
       throw new Error(`WhatsApp send failed (${res ? res.messageSendResult : 'unknown'})`)
     }
 
-    if (openForward && res.msg) {
+    if (targetMode !== 'active' && openForward && res.msg) {
       const ACK = ns('WAWebAck').ACK
       const t0 = Date.now()
       while (Date.now() - t0 < 15000 && res.msg.ack < ACK.SENT) {

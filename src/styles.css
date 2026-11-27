@@ -2380,6 +2380,12 @@ button:disabled {
   align-items: center;
 }
 
+.btn-export-toggle.active {
+  border-color: var(--bone-rose);
+  background: rgba(158, 31, 40, 0.34);
+  box-shadow: 0 0 10px rgba(204, 53, 64, 0.35);
+}
+
 @keyframes metal-spark-fly {
   0% {
     transform: translate(0, 0) scale(1.2);

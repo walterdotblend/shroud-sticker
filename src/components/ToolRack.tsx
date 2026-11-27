@@ -13,6 +13,8 @@ import {
   Send,
   Smartphone,
   Upload,
+  User,
+  MessageSquare,
 } from 'lucide-react'
 import {
   computeEffectiveDuration,
@@ -41,7 +43,6 @@ interface ToolRackProps {
   result: EncodeResult | null
   qrDataUrl: string | null
   p2pStatus: string | null
-  waExtAvailable: boolean
   waSending: boolean
   waSendStatus: string | null
   onStepChange: (step: WizardStep) => void
@@ -67,7 +68,6 @@ export function ToolRack({
   result,
   qrDataUrl,
   p2pStatus,
-  waExtAvailable,
   waSending,
   waSendStatus,
   onStepChange,
@@ -83,7 +83,6 @@ export function ToolRack({
   const [urlInput, setUrlInput] = useState('')
   const [dragOver, setDragOver] = useState(false)
   const [waTargetMode, setWaTargetMode] = useState<'self' | 'active'>('self')
-  const [waOpenForward, setWaOpenForward] = useState(true)
 
   const effectiveDuration = computeEffectiveDuration(settings.trimStart, settings.trimEnd, settings.speed)
   const durationTooLong = effectiveDuration > WHATSAPP_MAX_DURATION_SEC
@@ -514,9 +513,65 @@ export function ToolRack({
           {encoding ? t.forgingButton : t.forgeButton}
         </button>
 
-        {/* 2 Columns below Forge: Mobile (.webp / Pack / QR) & PC (WhatsApp Web + Sound) */}
+        {/* 2 Columns below Forge: PC (WhatsApp Web) on Left, Mobile (.webp / Pack / QR) on Right */}
         <div className="forge-split-cols">
-          {/* Column 1: Mobile */}
+          {/* Column 1 (Left): PC (WhatsApp Web) */}
+          <div className="forge-platform-col">
+            <div className="forge-col-header">
+              <Monitor size={13} className="icon-crimson" />
+              <span>{t.pcColTitle}</span>
+            </div>
+
+            <div className="export-buttons-grid">
+              <button
+                type="button"
+                className={`btn-export btn-export-toggle ${waTargetMode === 'self' ? 'active' : ''}`}
+                onClick={() => setWaTargetMode('self')}
+              >
+                <div className="export-icons">
+                  <User size={14} />
+                </div>
+                <span className="export-label">{t.waTargetSelf}</span>
+              </button>
+
+              <button
+                type="button"
+                className={`btn-export btn-export-toggle ${waTargetMode === 'active' ? 'active' : ''}`}
+                onClick={() => setWaTargetMode('active')}
+              >
+                <div className="export-icons">
+                  <MessageSquare size={14} />
+                </div>
+                <span className="export-label">{t.waTargetActive}</span>
+              </button>
+            </div>
+
+            <button
+              type="button"
+              className="btn-crimson forge-main-btn"
+              disabled={!result || encoding || waSending}
+              onClick={() => onSendToWhatsAppWeb(waTargetMode, waTargetMode === 'self')}
+            >
+              <Send size={14} />
+              {waSending ? t.sendToWaWebSending : t.sendToWaWebBtn}
+            </button>
+
+            {waSendStatus && <div className="p2p-status-badge">{waSendStatus}</div>}
+
+            <div className="import-guide">
+              <div className="import-guide-title">
+                <HelpCircle size={12} className="icon-crimson" />
+                <span>{t.pcColTitle}</span>
+              </div>
+              <ul className="import-list">
+                <li>{t.pcGuide1}</li>
+                <li>{t.pcGuide2}</li>
+                <li>{t.pcGuide3}</li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Column 2 (Right): Mobile */}
           <div className="forge-platform-col">
             <div className="forge-col-header">
               <Smartphone size={13} className="icon-crimson" />
@@ -567,69 +622,6 @@ export function ToolRack({
                 <li>{t.importAndroid}</li>
                 <li>{t.importIos}</li>
                 <li>{t.importDesktop}</li>
-              </ul>
-            </div>
-          </div>
-
-          {/* Column 2: PC (WhatsApp Web) */}
-          <div className="forge-platform-col">
-            <div className="forge-col-header">
-              <Monitor size={13} className="icon-crimson" />
-              <span>{t.pcColTitle}</span>
-            </div>
-
-            <div className="wa-web-controls-row">
-              <select
-                value={waTargetMode}
-                onChange={(e) => setWaTargetMode(e.target.value as 'self' | 'active')}
-                className="terminal-select"
-                aria-label="WhatsApp target chat"
-              >
-                <option value="self">{t.waTargetSelf}</option>
-                <option value="active">{t.waTargetActive}</option>
-              </select>
-              <label className="checkbox-inline">
-                <input
-                  type="checkbox"
-                  checked={waOpenForward}
-                  onChange={(e) => setWaOpenForward(e.target.checked)}
-                />
-                <span>{t.waOpenForward}</span>
-              </label>
-            </div>
-
-            <button
-              type="button"
-              className="btn-crimson forge-main-btn"
-              disabled={!result || encoding || waSending}
-              onClick={() => onSendToWhatsAppWeb(waTargetMode, waOpenForward)}
-            >
-              <Send size={14} />
-              {waSending ? t.sendToWaWebSending : t.sendToWaWebBtn}
-            </button>
-
-            {waSendStatus && <div className="p2p-status-badge">{waSendStatus}</div>}
-
-            {!waExtAvailable && (
-              <a
-                href={`${import.meta.env.BASE_URL}shroud-extension.zip`}
-                download="shroud-extension.zip"
-                className="btn-secondary ext-download-btn"
-              >
-                <Download size={13} />
-                {t.downloadExtBtn}
-              </a>
-            )}
-
-            <div className="import-guide">
-              <div className="import-guide-title">
-                <HelpCircle size={12} className="icon-crimson" />
-                <span>{t.pcColTitle}</span>
-              </div>
-              <ul className="import-list">
-                <li>{t.pcGuide1}</li>
-                <li>{t.pcGuide2}</li>
-                <li>{t.pcGuide3}</li>
               </ul>
             </div>
           </div>

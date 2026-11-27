@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { Package, Smartphone, Trash2, Upload, X } from 'lucide-react'
+import { Download, Package, Smartphone, Trash2, Upload, X } from 'lucide-react'
 import type { PackStickerItem } from '../engine/wastickers'
 import type { Translations } from '../i18n/translations'
 
@@ -148,6 +148,15 @@ export function PackSidebar({
           {t.packClear}
         </button>
       </div>
+
+      <a
+        href={`${import.meta.env.BASE_URL}shroud-extension.zip`}
+        download="shroud-extension.zip"
+        className="btn-secondary ext-download-btn"
+      >
+        <Download size={13} />
+        {t.downloadExtBtn}
+      </a>
     </aside>
   )
 }

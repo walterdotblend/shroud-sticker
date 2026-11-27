@@ -786,7 +786,6 @@ export function App() {
             result={result}
             qrDataUrl={qrDataUrl}
             p2pStatus={p2pStatus}
-            waExtAvailable={waExtAvailable}
             waSending={waSending}
             waSendStatus={waSendStatus}
             onStepChange={setStep}
