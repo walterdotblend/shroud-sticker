@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Eye, Scissors } from 'lucide-react'
-import { computeBaseFitSize } from '../engine/ffmpegArgs'
-import type { CanvasBgMode, EncodeResult, MediaInfo } from '../engine/types'
+import { Eye, Scissors, Volume2 } from 'lucide-react'
+import { computeBaseFitSize, computeEffectiveDuration } from '../engine/ffmpegArgs'
+import type { AudioTrackInfo, CanvasBgMode, EncodeResult, MediaInfo } from '../engine/types'
 import type { Translations } from '../i18n/translations'
+import { AudioTrackBar } from './AudioTrackBar'
 import { TrimTimeline } from './TrimTimeline'
 
 interface CropStageProps {
@@ -18,6 +19,12 @@ interface CropStageProps {
   trimStart: number
   trimEnd: number
   speed: number
+  audioTrack: AudioTrackInfo | null
+  videoHasOriginalAudio: boolean
+  audioEnabled: boolean
+  audioVolume: number
+  audioStart: number
+  loopVideoToAudio: boolean
   result: EncodeResult | null
   viewMode: 'source' | 'result'
   interactive: boolean
@@ -31,6 +38,15 @@ interface CropStageProps {
     rotationDeg?: number
     flipH?: boolean
   }) => void
+  onAudioSettingsChange: (patch: {
+    audioEnabled?: boolean
+    audioVolume?: number
+    audioStart?: number
+    loopVideoToAudio?: boolean
+  }) => void
+  onUploadAudioFile: (file: File) => void
+  onRemoveAudio: () => void
+  onRestoreVideoAudio: () => void
   onResetTransform: () => void
 }
 
@@ -129,6 +145,12 @@ export function CropStage({
   trimStart,
   trimEnd,
   speed,
+  audioTrack,
+  videoHasOriginalAudio,
+  audioEnabled,
+  audioVolume,
+  audioStart,
+  loopVideoToAudio,
   result,
   viewMode,
   interactive,
@@ -136,11 +158,19 @@ export function CropStage({
   onViewModeChange,
   onTrimChange,
   onTransformChange,
+  onAudioSettingsChange,
+  onUploadAudioFile,
+  onRemoveAudio,
+  onRestoreVideoAudio,
 }: CropStageProps) {
   const canvasBoxRef = useRef<HTMLDivElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
+  const audioRef = useRef<HTMLAudioElement>(null)
+  const audioCtxRef = useRef<AudioContext | null>(null)
+  const gainNodeRef = useRef<GainNode | null>(null)
   const [playing, setPlaying] = useState(true)
   const [currentTime, setCurrentTime] = useState(0)
+  const [currentAudioTime, setCurrentAudioTime] = useState(audioStart)
 
   // Non-canceling frame-locked seek queue for ultra-fluid scrubbing
   const isSeekingRef = useRef(false)
@@ -165,6 +195,50 @@ export function CropStage({
     if (!v || !media || media.isGif) return
     v.playbackRate = Math.max(0.1, Math.min(8, speed))
   }, [speed, media])
+
+  // Apply volume (0..200%) via Web Audio GainNode when available
+  useEffect(() => {
+    const a = audioRef.current
+    if (!a) return
+    a.muted = !audioEnabled || !audioTrack || !interactive
+    if (audioVolume <= 1) {
+      a.volume = Math.max(0, audioVolume)
+      if (gainNodeRef.current) gainNodeRef.current.gain.value = 1
+    } else {
+      a.volume = 1
+      try {
+        if (!audioCtxRef.current && typeof AudioContext !== 'undefined') {
+          const ctx = new AudioContext()
+          const src = ctx.createMediaElementSource(a)
+          const gain = ctx.createGain()
+          src.connect(gain)
+          gain.connect(ctx.destination)
+          audioCtxRef.current = ctx
+          gainNodeRef.current = gain
+        }
+        if (gainNodeRef.current) {
+          gainNodeRef.current.gain.value = Math.min(2.5, audioVolume)
+        }
+      } catch {
+        a.volume = 1
+      }
+    }
+  }, [audioVolume, audioEnabled, audioTrack, interactive])
+
+  // Keep audio playhead synced with video playhead
+  const syncAudioToVideoTime = useCallback(
+    (videoSec: number) => {
+      const a = audioRef.current
+      if (!audioTrack || !audioEnabled) return
+      const relSec = Math.max(0, (videoSec - trimStart) / Math.max(0.1, speed))
+      const targetAudio = Math.min(audioTrack.duration, audioStart + relSec)
+      setCurrentAudioTime(targetAudio)
+      if (a && Math.abs(a.currentTime - targetAudio) > 0.08) {
+        a.currentTime = targetAudio
+      }
+    },
+    [audioTrack, audioEnabled, trimStart, speed, audioStart]
+  )
 
   // Frame-locked seek executor: waits for each frame decode to paint before seeking to the next latest pointer time
   const queueFluidVideoSeek = useCallback(
@@ -211,18 +285,55 @@ export function CropStage({
     [media]
   )
 
-  // 60 FPS smooth playhead & trim loop tracker
+  // 60 FPS smooth playhead & trim/audio loop tracker
   useEffect(() => {
     const v = videoRef.current
-    if (!v || !media || media.isGif) return
+    const a = audioRef.current
+    if (!media) return
 
     let rafId = 0
+    const effectiveVidDur = computeEffectiveDuration(trimStart, trimEnd, speed)
+    const audioWindowMax = audioTrack
+      ? Math.min(
+          10,
+          loopVideoToAudio ? Math.max(effectiveVidDur, audioTrack.duration - audioStart) : effectiveVidDur
+        )
+      : effectiveVidDur
+
     const tick = () => {
-      if (!isScrubbingRef.current && videoRef.current) {
-        const cur = videoRef.current.currentTime
-        setCurrentTime(cur)
-        if (!videoRef.current.paused && (cur >= trimEnd || cur < trimStart - 0.05)) {
-          videoRef.current.currentTime = trimStart
+      if (!isScrubbingRef.current) {
+        if (v && !media.isGif) {
+          const cur = v.currentTime
+          setCurrentTime(cur)
+          if (!v.paused && (cur >= trimEnd || cur < trimStart - 0.05)) {
+            v.currentTime = trimStart
+            if (a && audioTrack && audioEnabled && !loopVideoToAudio) {
+              a.currentTime = audioStart
+              if (a.paused) a.play().catch(() => {})
+            }
+          }
+          if (a && audioTrack && audioEnabled) {
+            setCurrentAudioTime(a.currentTime)
+            const audioLimit = Math.min(audioTrack.duration, audioStart + audioWindowMax)
+            if (a.currentTime >= audioLimit || a.currentTime < audioStart - 0.05) {
+              a.currentTime = audioStart
+              if (loopVideoToAudio && !v.paused) {
+                v.currentTime = trimStart
+              }
+            }
+            if (!v.paused && a.paused && interactive) {
+              audioCtxRef.current?.resume().catch(() => {})
+              a.play().catch(() => {})
+            } else if ((v.paused || !interactive) && !a.paused) {
+              a.pause()
+            }
+          }
+        } else if (a && audioTrack && audioEnabled && interactive) {
+          setCurrentAudioTime(a.currentTime)
+          const audioLimit = Math.min(audioTrack.duration, audioStart + audioWindowMax)
+          if (!a.paused && (a.currentTime >= audioLimit || a.currentTime < audioStart - 0.05)) {
+            a.currentTime = audioStart
+          }
         }
       }
       rafId = requestAnimationFrame(tick)
@@ -230,19 +341,30 @@ export function CropStage({
     rafId = requestAnimationFrame(tick)
 
     return () => cancelAnimationFrame(rafId)
-  }, [media, trimStart, trimEnd])
+  }, [media, trimStart, trimEnd, speed, audioTrack, audioEnabled, audioStart, loopVideoToAudio, interactive])
 
   const togglePlay = () => {
     const v = videoRef.current
-    if (!v) return
-    if (v.paused) {
-      if (v.currentTime >= trimEnd || v.currentTime < trimStart) {
-        v.currentTime = trimStart
+    const a = audioRef.current
+    if (!v && !a) return
+    const isPaused = v ? v.paused : a ? a.paused : true
+    if (isPaused) {
+      if (v) {
+        if (v.currentTime >= trimEnd || v.currentTime < trimStart) {
+          v.currentTime = trimStart
+        }
+        v.play().catch(() => {})
       }
-      v.play().catch(() => {})
+      if (a && audioTrack && audioEnabled) {
+        audioCtxRef.current?.resume().catch(() => {})
+        const rel = v ? Math.max(0, (v.currentTime - trimStart) / Math.max(0.1, speed)) : 0
+        a.currentTime = Math.min(audioTrack.duration, audioStart + rel)
+        a.play().catch(() => {})
+      }
       setPlaying(true)
     } else {
-      v.pause()
+      v?.pause()
+      a?.pause()
       setPlaying(false)
     }
   }
@@ -366,7 +488,20 @@ export function CropStage({
               <span className={`stat-chip ${result.whatsappValid ? 'chip-ok' : 'chip-warn'}`}>
                 {(result.sizeBytes / 1024).toFixed(1)} KB {result.whatsappValid ? t.whatsappOk : t.whatsappTooBig}
               </span>
+              {result.oggBlob && (
+                <span className="stat-chip chip-ok">
+                  <Volume2 size={11} style={{ verticalAlign: 'middle', marginRight: 4 }} />
+                  OGG {(result.oggBlob.size / 1024).toFixed(1)} KB
+                </span>
+              )}
             </div>
+            {result.oggBlob && (
+              <audio
+                controls
+                src={URL.createObjectURL(result.oggBlob)}
+                className="result-ogg-player"
+              />
+            )}
           </div>
         ) : (
           <div className="media-stage-container">
@@ -554,19 +689,82 @@ export function CropStage({
                     setPlaying(false)
                   }
                 }
+                audioRef.current?.pause()
               }}
               onScrub={(sec) => {
                 setCurrentTime(sec)
                 queueFluidVideoSeek(sec)
+                syncAudioToVideoTime(sec)
               }}
               onScrubEnd={() => {
                 isScrubbingRef.current = false
                 if (videoRef.current && !media.isGif && wasPlayingBeforeScrubRef.current) {
                   videoRef.current.play().catch(() => {})
+                  if (audioRef.current && audioTrack && audioEnabled) {
+                    audioRef.current.play().catch(() => {})
+                  }
                   setPlaying(true)
                 }
               }}
             />
+
+            {audioTrack && <audio ref={audioRef} src={audioTrack.objectUrl} preload="auto" style={{ display: 'none' }} />}
+
+            {interactive && (
+              <AudioTrackBar
+                t={t}
+                audioTrack={audioTrack}
+                videoHasOriginalAudio={videoHasOriginalAudio}
+                audioEnabled={audioEnabled}
+                audioVolume={audioVolume}
+                audioStart={audioStart}
+                loopVideoToAudio={loopVideoToAudio}
+                effectiveVideoDuration={computeEffectiveDuration(trimStart, trimEnd, speed)}
+                currentAudioTime={currentAudioTime}
+                onToggleAudioEnabled={(enabled) => onAudioSettingsChange({ audioEnabled: enabled })}
+                onVolumeChange={(vol) => onAudioSettingsChange({ audioVolume: vol })}
+                onAudioStartChange={(startSec) => {
+                  onAudioSettingsChange({ audioStart: startSec })
+                  setCurrentAudioTime(startSec)
+                  if (audioRef.current) audioRef.current.currentTime = startSec
+                }}
+                onToggleLoopVideo={(loop) => onAudioSettingsChange({ loopVideoToAudio: loop })}
+                onUploadAudioFile={onUploadAudioFile}
+                onRemoveAudio={onRemoveAudio}
+                onRestoreVideoAudio={onRestoreVideoAudio}
+                onScrubStart={() => {
+                  isScrubbingRef.current = true
+                  if (videoRef.current && !media.isGif) {
+                    wasPlayingBeforeScrubRef.current = !videoRef.current.paused
+                    videoRef.current.pause()
+                  }
+                  audioRef.current?.pause()
+                  setPlaying(false)
+                }}
+                onScrubAudioTime={(audioSec) => {
+                  setCurrentAudioTime(audioSec)
+                  if (audioRef.current) audioRef.current.currentTime = audioSec
+                  if (videoRef.current && !media.isGif) {
+                    const trimDur = Math.max(0.1, trimEnd - trimStart)
+                    const relVideo = Math.max(0, (audioSec - audioStart) * Math.max(0.1, speed))
+                    const wrapped = loopVideoToAudio ? relVideo % trimDur : Math.min(trimDur, relVideo)
+                    const vSec = trimStart + wrapped
+                    setCurrentTime(vSec)
+                    queueFluidVideoSeek(vSec)
+                  }
+                }}
+                onScrubEnd={() => {
+                  isScrubbingRef.current = false
+                  if (wasPlayingBeforeScrubRef.current) {
+                    videoRef.current?.play().catch(() => {})
+                    if (audioRef.current && audioTrack && audioEnabled) {
+                      audioRef.current.play().catch(() => {})
+                    }
+                    setPlaying(true)
+                  }
+                }}
+              />
+            )}
           </div>
         )}
       </div>

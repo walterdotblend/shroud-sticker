@@ -1,9 +1,13 @@
 {
   "manifest_version": 3,
-  "name": "SHROUD // WhatsApp Sticker Forge Launcher",
-  "version": "1.0.0",
-  "description": "Paste any GIF or video link (or use current tab) to open it directly in SHROUD WhatsApp Sticker Forge.",
-  "permissions": ["activeTab"],
+  "name": "SHROUD // WhatsApp Sticker Forge & Sound Bridge",
+  "version": "1.1.0",
+  "description": "Send GIF/video links to SHROUD Sticker Forge and publish animated stickers with sound directly to WhatsApp Web.",
+  "permissions": ["activeTab", "tabs"],
+  "host_permissions": ["https://web.whatsapp.com/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
   "action": {
     "default_title": "SHROUD Sticker Forge",
     "default_popup": "popup.html",
@@ -14,9 +18,31 @@
   "icons": {
     "128": "icon128.png"
   },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://walterdotblend.github.io/shroud-sticker/*",
+        "http://localhost:5173/*",
+        "http://127.0.0.1:5173/*"
+      ],
+      "js": ["shroud_bridge.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["https://web.whatsapp.com/*"],
+      "js": ["wa_bridge.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["https://web.whatsapp.com/*"],
+      "js": ["wa_sender.js"],
+      "run_at": "document_idle",
+      "world": "MAIN"
+    }
+  ],
   "browser_specific_settings": {
     "gecko": {
-      "id": "shroud-sticker@walterdotblend.github.io",
+      "id": "shroud-forge@walterdotblend.github.io",
       "strict_min_version": "109.0"
     }
   }

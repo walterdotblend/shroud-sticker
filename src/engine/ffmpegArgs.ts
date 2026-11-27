@@ -148,16 +148,23 @@ export function buildStickerArgs(
   sourceHeight: number,
   overrideQuality?: number,
   overrideFps?: number,
-  overrideCompression?: number
+  overrideCompression?: number,
+  targetDurationSec?: number
 ): string[] {
   const args: string[] = []
   const trimDuration = Math.max(0.1, settings.trimEnd - settings.trimStart)
+  const effectiveBase = computeEffectiveDuration(settings.trimStart, settings.trimEnd, settings.speed)
+  const finalDuration = targetDurationSec && targetDurationSec > effectiveBase ? targetDurationSec : effectiveBase
+  const isLooped = finalDuration > effectiveBase + 0.05
 
+  if (isLooped) {
+    args.push('-stream_loop', '-1')
+  }
   if (settings.trimStart > 0.02) {
     args.push('-ss', settings.trimStart.toFixed(3))
   }
   args.push('-i', inputName)
-  args.push('-t', trimDuration.toFixed(3))
+  args.push('-t', (isLooped ? finalDuration : trimDuration).toFixed(3))
 
   const vf = buildStickerFilterGraph(settings, sourceWidth, sourceHeight, overrideFps)
   const cursed = Math.max(0, Math.min(100, settings.cursedLevel || 0))

@@ -118,6 +118,24 @@ export interface Translations {
   dragEndHandleHint: string
   dragRotateHint: string
   vialDragHint: string
+  audioLabel: string
+  audioNone: string
+  audioAddCustom: string
+  audioUseVideo: string
+  audioRestoreVideo: string
+  audioRemove: string
+  audioMuteHint: string
+  audioUnmuteHint: string
+  audioVolume: string
+  audioOffset: string
+  loopVideoToAudio: string
+  loopVideoToAudioHint: string
+  sendToWaWebBtn: string
+  sendToWaWebSending: string
+  waTargetSelf: string
+  waTargetActive: string
+  waOpenForward: string
+  waExtMissingHint: string
 }
 
 const en: Translations = {
@@ -228,6 +246,24 @@ const en: Translations = {
   dragEndHandleHint: 'Drag to set end time',
   dragRotateHint: 'Drag to rotate',
   vialDragHint: 'Drag up/down or use mouse wheel (double-click to reset, click value to type)',
+  audioLabel: 'Audio',
+  audioNone: 'Audio: None (Silent)',
+  audioAddCustom: 'Add Audio',
+  audioUseVideo: 'Video Audio',
+  audioRestoreVideo: 'Restore original video audio',
+  audioRemove: 'Remove audio',
+  audioMuteHint: 'Mute audio',
+  audioUnmuteHint: 'Enable audio',
+  audioVolume: 'Volume',
+  audioOffset: 'Offset',
+  loopVideoToAudio: 'Loop video to match audio',
+  loopVideoToAudioHint: 'Extends the video by looping its frames until the audio ends (max 10s)',
+  sendToWaWebBtn: 'Send to WhatsApp Web (with Sound)',
+  sendToWaWebSending: 'Sending to WhatsApp Web...',
+  waTargetSelf: 'My Self-Chat (Message Yourself)',
+  waTargetActive: 'Currently Open Chat',
+  waOpenForward: 'Open Forward dialog after sending',
+  waExtMissingHint: 'Requires the SHROUD Chrome/Edge extension (load/reload extension/ folder) + WhatsApp Web open.',
 }
 
 const es: Translations = {
@@ -338,6 +374,24 @@ const es: Translations = {
   dragEndHandleHint: 'Arrastra para ajustar el final',
   dragRotateHint: 'Arrastra para rotar',
   vialDragHint: 'Arrastra arriba/abajo o usa la rueda del ratón (doble clic para resetear, clic en el número para escribir)',
+  audioLabel: 'Audio',
+  audioNone: 'Audio: Ninguno (Silencio)',
+  audioAddCustom: 'Subir Audio',
+  audioUseVideo: 'Audio del Video',
+  audioRestoreVideo: 'Restaurar audio original del video',
+  audioRemove: 'Quitar audio',
+  audioMuteHint: 'Silenciar audio',
+  audioUnmuteHint: 'Activar audio',
+  audioVolume: 'Volumen',
+  audioOffset: 'Inicio',
+  loopVideoToAudio: 'Extender video en bucle al audio',
+  loopVideoToAudioHint: 'Duplica/repite el video en bucle para igualar la duración del audio (máx 10s)',
+  sendToWaWebBtn: 'Enviar a WhatsApp Web (con Sonido)',
+  sendToWaWebSending: 'Enviando a WhatsApp Web...',
+  waTargetSelf: 'Mi Chat Propio (Mensajes contigo)',
+  waTargetActive: 'Chat Abierto Actualmente',
+  waOpenForward: 'Abrir diálogo Reenviar al terminar',
+  waExtMissingHint: 'Requiere la extensión de SHROUD en Chrome/Edge (carpeta extension/) + WhatsApp Web abierto.',
 }
 
 const pt: Translations = {
@@ -448,6 +502,24 @@ const pt: Translations = {
   dragEndHandleHint: 'Arraste para ajustar o fim',
   dragRotateHint: 'Arraste para girar',
   vialDragHint: 'Arraste para cima/baixo ou use a roda do mouse (duplo clique para redefinir, clique no valor para digitar)',
+  audioLabel: 'Áudio',
+  audioNone: 'Áudio: Nenhum (Mudo)',
+  audioAddCustom: 'Enviar Áudio',
+  audioUseVideo: 'Áudio do Vídeo',
+  audioRestoreVideo: 'Restaurar áudio original do vídeo',
+  audioRemove: 'Remover áudio',
+  audioMuteHint: 'Silenciar áudio',
+  audioUnmuteHint: 'Ativar áudio',
+  audioVolume: 'Volume',
+  audioOffset: 'Início',
+  loopVideoToAudio: 'Estender vídeo em loop até o áudio',
+  loopVideoToAudioHint: 'Repete o vídeo em loop para acompanhar a duração do áudio (máx 10s)',
+  sendToWaWebBtn: 'Enviar para WhatsApp Web (com Som)',
+  sendToWaWebSending: 'Enviando para o WhatsApp Web...',
+  waTargetSelf: 'Meu Próprio Chat',
+  waTargetActive: 'Chat Aberto Atual',
+  waOpenForward: 'Abrir Encaminhar após enviar',
+  waExtMissingHint: 'Requer a extensão SHROUD no Chrome/Edge (pasta extension/) + WhatsApp Web aberto.',
 }
 
 const fr: Translations = {
@@ -558,6 +630,24 @@ const fr: Translations = {
   dragEndHandleHint: 'Faites glisser pour régler la fin',
   dragRotateHint: 'Faites glisser pour pivoter',
   vialDragHint: 'Glissez haut/bas ou utilisez la molette (double-clic pour réinitialiser, cliquez sur la valeur pour saisir)',
+  audioLabel: 'Audio',
+  audioNone: 'Audio : Aucun (Muet)',
+  audioAddCustom: 'Ajouter Audio',
+  audioUseVideo: 'Audio Vidéo',
+  audioRestoreVideo: 'Restaurer l’audio d’origine',
+  audioRemove: 'Supprimer l’audio',
+  audioMuteHint: 'Couper le son',
+  audioUnmuteHint: 'Activer le son',
+  audioVolume: 'Volume',
+  audioOffset: 'Décalage',
+  loopVideoToAudio: 'Boucler la vidéo sur l’audio',
+  loopVideoToAudioHint: 'Prolonge la vidéo en boucle jusqu’à la fin de l’audio (max 10s)',
+  sendToWaWebBtn: 'Envoyer vers WhatsApp Web (avec Son)',
+  sendToWaWebSending: 'Envoi vers WhatsApp Web...',
+  waTargetSelf: 'Mon propre chat',
+  waTargetActive: 'Discussion ouverte',
+  waOpenForward: 'Ouvrir Transférer après l’envoi',
+  waExtMissingHint: 'Nécessite l’extension SHROUD Chrome/Edge (dossier extension/) + WhatsApp Web ouvert.',
 }
 
 const de: Translations = {
@@ -668,6 +758,24 @@ const de: Translations = {
   dragEndHandleHint: 'Ziehen, um die Endzeit festzulegen',
   dragRotateHint: 'Ziehen zum Drehen',
   vialDragHint: 'Hoch/runter ziehen oder Mausrad nutzen (Doppelklick zum Zurücksetzen, Klick auf Wert zum Tippen)',
+  audioLabel: 'Audio',
+  audioNone: 'Audio: Kein Ton',
+  audioAddCustom: 'Audio wählen',
+  audioUseVideo: 'Video-Audio',
+  audioRestoreVideo: 'Original-Videoaudio wiederherstellen',
+  audioRemove: 'Audio entfernen',
+  audioMuteHint: 'Ton stummschalten',
+  audioUnmuteHint: 'Ton aktivieren',
+  audioVolume: 'Lautstärke',
+  audioOffset: 'Start',
+  loopVideoToAudio: 'Video an Audio anpassen (Loop)',
+  loopVideoToAudioHint: 'Wiederholt das Video in Schleife bis zum Ende des Audios (max. 10s)',
+  sendToWaWebBtn: 'An WhatsApp Web senden (mit Ton)',
+  sendToWaWebSending: 'Sende an WhatsApp Web...',
+  waTargetSelf: 'Eigener Chat (Notiz an mich)',
+  waTargetActive: 'Aktuell geöffneter Chat',
+  waOpenForward: 'Weiterleiten-Dialog nach Senden öffnen',
+  waExtMissingHint: 'Erfordert die SHROUD Chrome/Edge-Erweiterung (Ordner extension/) + geöffnetes WhatsApp Web.',
 }
 
 const ja: Translations = {
@@ -778,6 +886,24 @@ const ja: Translations = {
   dragEndHandleHint: 'ドラッグして終了時間を調整',
   dragRotateHint: 'ドラッグして回転',
   vialDragHint: '上下ドラッグまたはホイールで調整（ダブルクリックでリセット、数値をクリックして直接入力）',
+  audioLabel: '音声',
+  audioNone: '音声: なし（無音）',
+  audioAddCustom: '音声を追加',
+  audioUseVideo: '動画の音声',
+  audioRestoreVideo: '元の動画音声に戻す',
+  audioRemove: '音声を削除',
+  audioMuteHint: 'ミュート',
+  audioUnmuteHint: '音声を有効化',
+  audioVolume: '音量',
+  audioOffset: '開始位置',
+  loopVideoToAudio: '音声に合わせて動画をループ延長',
+  loopVideoToAudioHint: '音声の長さに合わせて動画フレームをループ再生します（最大10秒）',
+  sendToWaWebBtn: 'WhatsApp Webへ送信（音声付き）',
+  sendToWaWebSending: 'WhatsApp Webへ送信中...',
+  waTargetSelf: '自分宛てのチャット',
+  waTargetActive: '現在開いているチャット',
+  waOpenForward: '送信後に転送画面を開く',
+  waExtMissingHint: 'SHROUD拡張機能（extension/フォルダ）とWhatsApp Webのタブが必要です。',
 }
 
 const ru: Translations = {
@@ -888,6 +1014,24 @@ const ru: Translations = {
   dragEndHandleHint: 'Потяните, чтобы изменить время окончания',
   dragRotateHint: 'Потяните для поворота',
   vialDragHint: 'Тяните вверх/вниз или крутите колесо мыши (двойной клик — сброс, клик по числу — ввод)',
+  audioLabel: 'Аудио',
+  audioNone: 'Аудио: Нет (Без звука)',
+  audioAddCustom: 'Загрузить аудио',
+  audioUseVideo: 'Звук видео',
+  audioRestoreVideo: 'Вернуть исходный звук видео',
+  audioRemove: 'Удалить аудио',
+  audioMuteHint: 'Выключить звук',
+  audioUnmuteHint: 'Включить звук',
+  audioVolume: 'Громкость',
+  audioOffset: 'Старт',
+  loopVideoToAudio: 'Зациклить видео под длину аудио',
+  loopVideoToAudioHint: 'Повторяет видео по кругу до конца аудио (макс. 10с)',
+  sendToWaWebBtn: 'Отправить в WhatsApp Web (со звуком)',
+  sendToWaWebSending: 'Отправка в WhatsApp Web...',
+  waTargetSelf: 'Чат с самим собой',
+  waTargetActive: 'Текущий открытый чат',
+  waOpenForward: 'Открыть окно пересылки после отправки',
+  waExtMissingHint: 'Требуется расширение SHROUD для Chrome/Edge (папка extension/) + открытый WhatsApp Web.',
 }
 
 const DICTIONARIES: Record<LangCode, Translations> = { en, es, pt, fr, de, ja, ru }

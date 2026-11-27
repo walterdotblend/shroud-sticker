@@ -35,6 +35,10 @@ const baseSettings: StickerSettings = {
   compressionLevel: 4,
   autoCompressWhatsApp: true,
   maxBytes: WHATSAPP_SAFE_TARGET_BYTES,
+  audioEnabled: false,
+  audioVolume: 1,
+  audioStart: 0,
+  loopVideoToAudio: false,
 }
 
 describe('ffmpegArgs', () => {

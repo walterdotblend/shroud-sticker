@@ -9,6 +9,7 @@ import {
   Plus,
   QrCode,
   RotateCcw,
+  Send,
   Smartphone,
   Upload,
 } from 'lucide-react'
@@ -39,6 +40,9 @@ interface ToolRackProps {
   result: EncodeResult | null
   qrDataUrl: string | null
   p2pStatus: string | null
+  waExtAvailable: boolean
+  waSending: boolean
+  waSendStatus: string | null
   onStepChange: (step: WizardStep) => void
   onFileSelected: (file: File) => void
   onUrlSubmit: (url: string) => void
@@ -46,6 +50,7 @@ interface ToolRackProps {
   onForge: () => void
   onDownload: () => void
   onAddToPack: () => void
+  onSendToWhatsAppWeb: (targetMode: 'self' | 'active', openForward: boolean) => void
 }
 
 const SPEED_PRESETS = [0.5, 1, 1.5, 2, 3, 4]
@@ -61,6 +66,9 @@ export function ToolRack({
   result,
   qrDataUrl,
   p2pStatus,
+  waExtAvailable,
+  waSending,
+  waSendStatus,
   onStepChange,
   onFileSelected,
   onUrlSubmit,
@@ -68,10 +76,13 @@ export function ToolRack({
   onForge,
   onDownload,
   onAddToPack,
+  onSendToWhatsAppWeb,
 }: ToolRackProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [urlInput, setUrlInput] = useState('')
   const [dragOver, setDragOver] = useState(false)
+  const [waTargetMode, setWaTargetMode] = useState<'self' | 'active'>('self')
+  const [waOpenForward, setWaOpenForward] = useState(true)
 
   const effectiveDuration = computeEffectiveDuration(settings.trimStart, settings.trimEnd, settings.speed)
   const durationTooLong = effectiveDuration > WHATSAPP_MAX_DURATION_SEC
@@ -509,6 +520,40 @@ export function ToolRack({
             </div>
             <span className="export-label">{t.addToPack}</span>
           </button>
+        </div>
+
+        {/* Direct WhatsApp Web Sound Sticker Bridge (via SHROUD Extension) */}
+        <div className="wa-web-send-box">
+          <div className="wa-web-controls-row">
+            <select
+              value={waTargetMode}
+              onChange={(e) => setWaTargetMode(e.target.value as 'self' | 'active')}
+              className="terminal-select"
+              aria-label="WhatsApp target chat"
+            >
+              <option value="self">{t.waTargetSelf}</option>
+              <option value="active">{t.waTargetActive}</option>
+            </select>
+            <label className="checkbox-inline">
+              <input
+                type="checkbox"
+                checked={waOpenForward}
+                onChange={(e) => setWaOpenForward(e.target.checked)}
+              />
+              <span>{t.waOpenForward}</span>
+            </label>
+          </div>
+          <button
+            type="button"
+            className="btn-crimson forge-main-btn"
+            disabled={!result || encoding || waSending}
+            onClick={() => onSendToWhatsAppWeb(waTargetMode, waOpenForward)}
+          >
+            <Send size={15} />
+            {waSending ? t.sendToWaWebSending : t.sendToWaWebBtn}
+          </button>
+          {waSendStatus && <div className="p2p-status-badge">{waSendStatus}</div>}
+          {!waExtAvailable && <p className="muted-meta">{t.waExtMissingHint}</p>}
         </div>
 
         {qrDataUrl && (

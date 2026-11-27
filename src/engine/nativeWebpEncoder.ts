@@ -160,11 +160,17 @@ async function canvasToWebpBytes(canvas: HTMLCanvasElement, qualityRatio: number
 export async function encodeStickerNative(
   media: MediaInfo,
   settings: StickerSettings,
-  callbacks: EngineCallbacks
+  callbacks: EngineCallbacks,
+  targetDurationOverride?: number
 ): Promise<EncodeResult> {
   const size = settings.targetSize || 512
   const trimDuration = Math.max(0.1, settings.trimEnd - settings.trimStart)
-  const effectiveDuration = computeEffectiveDuration(settings.trimStart, settings.trimEnd, settings.speed)
+  const baseEffectiveDuration = computeEffectiveDuration(settings.trimStart, settings.trimEnd, settings.speed)
+  const finalDuration =
+    targetDurationOverride && targetDurationOverride > baseEffectiveDuration + 0.05
+      ? Math.min(10, targetDurationOverride)
+      : baseEffectiveDuration
+  const loopCycles = finalDuration / Math.max(0.1, baseEffectiveDuration)
   const cursed = Math.max(0, Math.min(100, settings.cursedLevel || 0))
 
   callbacks.onLog('> Using Fast Native WebP Muxer (0 MB download, GPU Canvas + C++ libwebp)...')
@@ -172,7 +178,7 @@ export async function encodeStickerNative(
 
   const maxAllowedFps = Math.max(8, Math.min(45, media.sourceFps || 30))
   const baseFps = Math.max(8, Math.min(maxAllowedFps, Math.round(settings.fps)))
-  const totalBaseFrames = Math.max(2, Math.min(150, Math.round(effectiveDuration * baseFps)))
+  const totalBaseFrames = Math.max(2, Math.min(150, Math.round(baseEffectiveDuration * baseFps)))
   const renderedCanvases: HTMLCanvasElement[] = []
 
   const lower = media.name.toLowerCase()
@@ -261,16 +267,22 @@ export async function encodeStickerNative(
   const encodeAt = async (passNum: number, targetFps: number, targetQ: number) => {
     const effectiveQ =
       cursed > 0 ? Math.max(1, Math.round(targetQ * (1 - (cursed / 100) * 0.94))) : Math.max(1, targetQ)
-    const stepFrameCount = Math.max(1, Math.round((renderedCanvases.length * targetFps) / baseFps))
-    const frameDurMs = Math.max(20, Math.round((effectiveDuration * 1000) / stepFrameCount))
+    const stepFrameCount = Math.max(
+      1,
+      Math.round(finalDuration * targetFps)
+    )
+    const frameDurMs = Math.max(20, Math.round((finalDuration * 1000) / stepFrameCount))
     const encodedFrames: Array<{ webpBytes: Uint8Array; durationMs: number }> = []
 
-    callbacks.onLog(`> Pass ${passNum}: fps=${targetFps}, q=${effectiveQ} (${stepFrameCount} frames)`)
+    callbacks.onLog(
+      `> Pass ${passNum}: fps=${targetFps}, q=${effectiveQ} (${stepFrameCount} frames${loopCycles > 1.05 ? `, looped ${loopCycles.toFixed(1)}×` : ''})`
+    )
 
     for (let fi = 0; fi < stepFrameCount; fi++) {
+      const cycleProgress = ((fi / Math.max(1, stepFrameCount)) * loopCycles) % 1
       const srcIdx = Math.min(
         renderedCanvases.length - 1,
-        Math.floor((fi * renderedCanvases.length) / stepFrameCount)
+        Math.floor(cycleProgress * renderedCanvases.length)
       )
       const webpBytes = await canvasToWebpBytes(renderedCanvases[srcIdx], effectiveQ / 100)
       encodedFrames.push({ webpBytes, durationMs: frameDurMs })
@@ -323,10 +335,10 @@ export async function encodeStickerNative(
     sizeBytes: blob.size,
     width: size,
     height: size,
-    durationSec: effectiveDuration,
+    durationSec: finalDuration,
     passes: passLogs,
     fpsUsed: bestStep.fps,
     qualityUsed: bestStep.quality,
-    whatsappValid: blob.size <= WHATSAPP_MAX_BYTES && effectiveDuration <= 10.05,
+    whatsappValid: blob.size <= WHATSAPP_MAX_BYTES && finalDuration <= 10.05,
   }
 }

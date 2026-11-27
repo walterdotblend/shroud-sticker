@@ -11,6 +11,15 @@ export interface CropRect {
 
 export type CanvasBgMode = 'transparent' | 'obsidian'
 
+export interface AudioTrackInfo {
+  name: string
+  duration: number
+  peaks: number[]
+  isFromVideo: boolean
+  objectUrl: string
+  file: File
+}
+
 export interface StickerSettings {
   trimStart: number
   trimEnd: number
@@ -33,6 +42,10 @@ export interface StickerSettings {
   compressionLevel: number
   autoCompressWhatsApp: boolean
   maxBytes: number
+  audioEnabled: boolean
+  audioVolume: number
+  audioStart: number
+  loopVideoToAudio: boolean
 }
 
 export interface MediaInfo {
@@ -65,6 +78,9 @@ export interface EncodeResult {
   fpsUsed: number
   qualityUsed: number
   whatsappValid: boolean
+  oggBlob?: Blob
+  oggSizeBytes?: number
+  audioDurationSec?: number
 }
 
 export const WHATSAPP_MAX_BYTES = 500 * 1024 // 500 KB hard limit

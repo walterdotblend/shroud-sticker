@@ -7,7 +7,9 @@ import { PackSidebar } from './components/PackSidebar'
 import { ToolRack, type WizardStep } from './components/ToolRack'
 import { stickerEngine } from './engine/ffmpegClient'
 import { probeMediaFile } from './engine/mediaProbe'
+import { probeAudioSource } from './engine/oggOpusEncoder'
 import { loadSavedPackState, savePackState } from './engine/packStorage'
+import { pingShroudExtension, sendStickerToWhatsAppWeb } from './engine/waWebBridge'
 import {
   receiveP2pStickerFromHost,
   startP2pStickerHost,
@@ -18,6 +20,7 @@ import {
   WHATSAPP_MAX_DURATION_SEC,
   WHATSAPP_SAFE_TARGET_BYTES,
   WHATSAPP_STICKER_SIZE,
+  type AudioTrackInfo,
   type EncodeResult,
   type MediaInfo,
   type StickerSettings,
@@ -58,6 +61,10 @@ const INITIAL_SETTINGS: StickerSettings = {
   compressionLevel: 4,
   autoCompressWhatsApp: true,
   maxBytes: WHATSAPP_SAFE_TARGET_BYTES,
+  audioEnabled: false,
+  audioVolume: 1,
+  audioStart: 0,
+  loopVideoToAudio: false,
 }
 
 export function App() {
@@ -88,6 +95,12 @@ export function App() {
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
   const [p2pStatus, setP2pStatus] = useState<string | null>(null)
   const p2pHostRef = useRef<P2pHostSession | null>(null)
+
+  const [audioTrack, setAudioTrack] = useState<AudioTrackInfo | null>(null)
+  const [videoOriginalAudio, setVideoOriginalAudio] = useState<AudioTrackInfo | null>(null)
+  const [waExtAvailable, setWaExtAvailable] = useState(false)
+  const [waSending, setWaSending] = useState(false)
+  const [waSendStatus, setWaSendStatus] = useState<string | null>(null)
 
   // Mobile P2P receiver mode (?p2p=<peerId>)
   const [incomingPeerId] = useState<string | null>(() => {
@@ -145,6 +158,13 @@ export function App() {
     if (!packLoaded) return
     savePackState(packName, packItems)
   }, [packLoaded, packName, packItems])
+
+  // Detect SHROUD Chrome/Edge Extension for direct WhatsApp Web Sound Sticker Bridge
+  useEffect(() => {
+    pingShroudExtension(600).then((ok) => {
+      if (ok) setWaExtAvailable(true)
+    })
+  }, [])
 
   // Non-blocking visit telemetry to Zylo Central Panel (once per session)
   useEffect(() => {
@@ -213,12 +233,19 @@ export function App() {
 
   const loadFile = async (file: File) => {
     setUrlError(null)
+    setWaSendStatus(null)
     try {
       const info = await probeMediaFile(file)
       setMedia(info)
       setStickerName(info.name.replace(/\.[^.]+$/, '') || 'sticker')
       setResult(null)
       setViewMode('source')
+
+      // Probe video audio track by default (if non-GIF)
+      const probedAudio = !info.isGif ? await probeAudioSource(file, true) : null
+      setVideoOriginalAudio(probedAudio)
+      setAudioTrack(probedAudio)
+
       setSettings((prev) => ({
         ...prev,
         trimStart: 0,
@@ -233,18 +260,56 @@ export function App() {
         flipH: false,
         fps: Math.min(15, info.sourceFps),
         cursedLevel: 0,
+        audioEnabled: !!probedAudio,
+        audioVolume: 1,
+        audioStart: 0,
+        loopVideoToAudio: false,
       }))
       setStep(2)
       appendLog(
         `> Media loaded: ${info.name} (${info.width}×${info.height}, ${info.duration.toFixed(2)}s, ${(
           info.sizeBytes / 1024
-        ).toFixed(1)} KB)`
+        ).toFixed(1)} KB${probedAudio ? ', with audio' : ''})`
       )
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
       setUrlError(msg)
       appendLog(`! Error: ${msg}`)
     }
+  }
+
+  const handleUploadAudioFile = async (file: File) => {
+    const probed = await probeAudioSource(file, false)
+    if (!probed) {
+      appendLog(`! Could not decode audio from "${file.name}".`)
+      return
+    }
+    setAudioTrack(probed)
+    setSettings((prev) => ({
+      ...prev,
+      audioEnabled: true,
+      audioStart: 0,
+      audioVolume: 1,
+    }))
+    appendLog(`> Custom audio loaded: ${probed.name} (${probed.duration.toFixed(2)}s)`)
+  }
+
+  const handleRemoveAudio = () => {
+    setAudioTrack(null)
+    setSettings((prev) => ({ ...prev, audioEnabled: false, loopVideoToAudio: false }))
+    appendLog('> Audio track removed.')
+  }
+
+  const handleRestoreVideoAudio = () => {
+    if (!videoOriginalAudio) return
+    setAudioTrack(videoOriginalAudio)
+    setSettings((prev) => ({
+      ...prev,
+      audioEnabled: true,
+      audioStart: prev.trimStart,
+      loopVideoToAudio: false,
+    }))
+    appendLog('> Restored original video audio.')
   }
 
   const handleUrlSubmit = useCallback(
@@ -288,15 +353,21 @@ export function App() {
     setProgress(0.02)
     setStatusText(t.forgingButton)
     setResult(null)
+    setWaSendStatus(null)
 
     try {
-      const encoded = await stickerEngine.encodeSticker(media, settings, {
-        onLog: appendLog,
-        onProgress: (ratio, text) => {
-          setProgress(ratio)
-          setStatusText(text)
+      const encoded = await stickerEngine.encodeSticker(
+        media,
+        settings,
+        {
+          onLog: appendLog,
+          onProgress: (ratio, text) => {
+            setProgress(ratio)
+            setStatusText(text)
+          },
         },
-      })
+        audioTrack
+      )
       setResult(encoded)
       setViewMode('result')
       const kb = (encoded.sizeBytes / 1024).toFixed(1)
@@ -369,6 +440,43 @@ export function App() {
     a.remove()
     appendLog(`> Exported .webp: ${stem}.webp`)
     await startQrP2pForResult()
+  }
+
+  const handleSendToWhatsAppWeb = async (targetMode: 'self' | 'active', openForward: boolean) => {
+    if (!result || waSending) return
+    setWaSending(true)
+    setWaSendStatus(t.sendToWaWebSending)
+    try {
+      const hasExt = waExtAvailable || (await pingShroudExtension(600))
+      if (!hasExt) {
+        setWaSendStatus(t.waExtMissingHint)
+        return
+      }
+      setWaExtAvailable(true)
+      const res = await sendStickerToWhatsAppWeb({
+        webpBlob: result.blob,
+        oggBlob: result.oggBlob,
+        durationSec: result.audioDurationSec ?? result.durationSec,
+        isAnimated: result.durationSec > 0.2,
+        targetMode,
+        openForward,
+      })
+      if (res.ok) {
+        setWaSendStatus(
+          result.oggBlob
+            ? '✓ Sent to WhatsApp Web with audio!'
+            : '✓ Sent sticker to WhatsApp Web!'
+        )
+        appendLog(
+          `> ✓ Sent to WhatsApp Web (${result.oggBlob ? 'WebP + OGG/Opus audio' : 'WebP'}).`
+        )
+      } else {
+        setWaSendStatus(`! ${res.error || 'Failed to send to WhatsApp Web.'}`)
+        appendLog(`! WhatsApp Web send failed: ${res.error || 'Unknown error'}`)
+      }
+    } finally {
+      setWaSending(false)
+    }
   }
 
   const handleAddToPack = () => {
@@ -617,6 +725,12 @@ export function App() {
               trimStart={settings.trimStart}
               trimEnd={settings.trimEnd}
               speed={settings.speed}
+              audioTrack={audioTrack}
+              videoHasOriginalAudio={!!videoOriginalAudio}
+              audioEnabled={settings.audioEnabled}
+              audioVolume={settings.audioVolume}
+              audioStart={settings.audioStart}
+              loopVideoToAudio={settings.loopVideoToAudio}
               result={result}
               viewMode={viewMode}
               interactive={step === 2}
@@ -626,6 +740,10 @@ export function App() {
                 handleSettingsChange({ trimStart: start, trimEnd: end })
               }
               onTransformChange={(patch) => handleSettingsChange(patch)}
+              onAudioSettingsChange={(patch) => handleSettingsChange(patch)}
+              onUploadAudioFile={handleUploadAudioFile}
+              onRemoveAudio={handleRemoveAudio}
+              onRestoreVideoAudio={handleRestoreVideoAudio}
               onResetTransform={() =>
                 handleSettingsChange({ canvasScale: 1, canvasX: 0, canvasY: 0, rotationDeg: 0, flipH: false })
               }
@@ -643,6 +761,9 @@ export function App() {
             result={result}
             qrDataUrl={qrDataUrl}
             p2pStatus={p2pStatus}
+            waExtAvailable={waExtAvailable}
+            waSending={waSending}
+            waSendStatus={waSendStatus}
             onStepChange={setStep}
             onFileSelected={loadFile}
             onUrlSubmit={handleUrlSubmit}
@@ -650,6 +771,7 @@ export function App() {
             onForge={handleForge}
             onDownload={handleDownload}
             onAddToPack={handleAddToPack}
+            onSendToWhatsAppWeb={handleSendToWhatsAppWeb}
           />
 
           <PackSidebar

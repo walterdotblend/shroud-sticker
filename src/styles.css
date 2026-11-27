@@ -2077,3 +2077,177 @@ button:disabled {
   color: var(--text-muted);
   font-size: 10px;
 }
+
+/* Audio Track Bar & Waveform Scrubber */
+.audio-track-bar {
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 7px 9px;
+  background: rgba(12, 8, 11, 0.88);
+  border: 1px solid var(--border-dim);
+  border-radius: 6px;
+  position: relative;
+  z-index: 12;
+}
+
+.audio-bar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.audio-bar-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+
+.audio-mute-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 22px;
+  border-radius: 4px;
+  border: 1px solid var(--border-dim);
+  background: #160f13;
+  color: var(--text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.audio-mute-btn.active {
+  border-color: var(--crimson-bright);
+  color: var(--bone-rose);
+  background: rgba(158, 31, 40, 0.25);
+}
+
+.audio-track-name {
+  font-size: 10.5px;
+  color: var(--bone-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.audio-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.audio-del-btn:hover {
+  border-color: #f07b82;
+  color: #f07b82;
+}
+
+.audio-wave-track {
+  position: relative;
+  height: 30px;
+  background: #0d090b;
+  border: 1px solid var(--border-dim);
+  border-radius: 4px;
+  overflow: hidden;
+  cursor: pointer;
+  user-select: none;
+  touch-action: none;
+}
+
+.audio-wave-bars {
+  position: absolute;
+  inset: 2px 3px;
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  pointer-events: none;
+}
+
+.audio-wave-bar {
+  flex: 1;
+  min-width: 1px;
+  background: rgba(194, 155, 157, 0.42);
+  border-radius: 1px;
+}
+
+.audio-window-highlight {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgba(204, 53, 64, 0.22);
+  border-left: 1.5px solid var(--crimson-bright);
+  border-right: 1.5px solid var(--crimson-bright);
+  pointer-events: none;
+}
+
+.audio-playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #fff2f2;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.audio-controls-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 10.5px;
+  color: var(--text-muted);
+}
+
+.audio-ctrl-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.audio-vol-slider {
+  width: 72px;
+}
+
+.audio-offset-input {
+  width: 46px;
+  background: #0c090b;
+  border: 1px solid var(--border-dim);
+  border-radius: 4px;
+  padding: 1px 4px;
+}
+
+.audio-loop-toggle {
+  color: var(--bone-rose);
+  font-weight: 600;
+}
+
+.result-ogg-player {
+  width: 100%;
+  max-width: 260px;
+  height: 34px;
+}
+
+/* Direct WhatsApp Web Sound Sticker Bridge */
+.wa-web-send-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 6px;
+  background: rgba(16, 10, 14, 0.88);
+  border: 1px solid var(--border-crimson);
+}
+
+.wa-web-controls-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}

@@ -7,7 +7,8 @@ import {
   planAutoCompressSteps,
 } from './ffmpegArgs'
 import { encodeStickerNative } from './nativeWebpEncoder'
-import type { EncodePassLog, EncodeResult, MediaInfo, StickerSettings } from './types'
+import { encodeAudioToOggOpus } from './oggOpusEncoder'
+import type { AudioTrackInfo, EncodePassLog, EncodeResult, MediaInfo, StickerSettings } from './types'
 import { WHATSAPP_MAX_BYTES } from './types'
 
 const CORE_VERSION = '0.12.6'
@@ -64,10 +65,46 @@ class StickerFfmpegEngine {
   async encodeSticker(
     media: MediaInfo,
     settings: StickerSettings,
-    callbacks: EngineCallbacks
+    callbacks: EngineCallbacks,
+    audioTrack?: AudioTrackInfo | null
   ): Promise<EncodeResult> {
+    const baseEffectiveDuration = computeEffectiveDuration(settings.trimStart, settings.trimEnd, settings.speed)
+    const audioAvailableDur =
+      audioTrack && settings.audioEnabled
+        ? Math.max(0.1, audioTrack.duration - Math.max(0, settings.audioStart))
+        : 0
+    const targetDuration =
+      audioTrack && settings.audioEnabled && settings.loopVideoToAudio && audioAvailableDur > baseEffectiveDuration
+        ? Math.min(10, audioAvailableDur)
+        : baseEffectiveDuration
+
+    const attachAudioIfEnabled = async (res: EncodeResult): Promise<EncodeResult> => {
+      if (!audioTrack || !settings.audioEnabled) return res
+      const audioTargetDur = Math.max(0.1, Math.min(res.durationSec, audioAvailableDur, 10))
+      try {
+        callbacks.onLog(`> Encoding synchronized OGG/Opus audio (${audioTargetDur.toFixed(2)}s, vol ${Math.round(settings.audioVolume * 100)}%)...`)
+        const { oggBlob, durationSec: audDur } = await encodeAudioToOggOpus(
+          audioTrack.file,
+          settings.audioStart,
+          audioTargetDur,
+          settings.audioVolume
+        )
+        callbacks.onLog(`> ✓ Audio encoded: ${(oggBlob.size / 1024).toFixed(1)} KB OGG/Opus (${audDur.toFixed(2)}s)`)
+        return {
+          ...res,
+          oggBlob,
+          oggSizeBytes: oggBlob.size,
+          audioDurationSec: audDur,
+        }
+      } catch (audioErr) {
+        callbacks.onLog(`! Audio encoding skipped: ${audioErr instanceof Error ? audioErr.message : String(audioErr)}`)
+        return res
+      }
+    }
+
     try {
-      return await encodeStickerNative(media, settings, callbacks)
+      const nativeRes = await encodeStickerNative(media, settings, callbacks, targetDuration)
+      return await attachAudioIfEnabled(nativeRes)
     } catch (nativeErr) {
       callbacks.onLog(`> Native fast path fallback (${String(nativeErr)}), switching to FFmpeg.wasm...`)
     }
@@ -77,7 +114,7 @@ class StickerFfmpegEngine {
     const inputName = `input.${ext}`
     const outputName = 'sticker.webp'
 
-    const effectiveDuration = computeEffectiveDuration(settings.trimStart, settings.trimEnd, settings.speed)
+    const effectiveDuration = targetDuration
 
     let currentPass = 1
     let currentPassExpectedFrames = Math.max(1, Math.round(effectiveDuration * settings.fps))
@@ -142,7 +179,8 @@ class StickerFfmpegEngine {
           media.height,
           step.quality,
           step.fps,
-          step.compressionLevel
+          step.compressionLevel,
+          effectiveDuration
         )
 
         const exitCode = await ff.exec(args)
@@ -179,7 +217,7 @@ class StickerFfmpegEngine {
 
       callbacks.onProgress(1, 'Sticker forged.')
 
-      return {
+      return await attachAudioIfEnabled({
         blob,
         url,
         sizeBytes: blob.size,
@@ -190,7 +228,7 @@ class StickerFfmpegEngine {
         fpsUsed: bestStep.fps,
         qualityUsed: bestStep.quality,
         whatsappValid: blob.size <= WHATSAPP_MAX_BYTES && effectiveDuration <= 10.05,
-      }
+      })
     } finally {
       ff.off('progress', progressListener)
       ff.off('log', logListener)
