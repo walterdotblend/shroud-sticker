@@ -8,7 +8,6 @@ import {
   Monitor,
   Move,
   Plus,
-  QrCode,
   RotateCcw,
   Send,
   Smartphone,
@@ -42,7 +41,6 @@ interface ToolRackProps {
   encoding: boolean
   result: EncodeResult | null
   qrDataUrl: string | null
-  p2pStatus: string | null
   waSending: boolean
   waSendStatus: string | null
   onStepChange: (step: WizardStep) => void
@@ -67,7 +65,6 @@ export function ToolRack({
   encoding,
   result,
   qrDataUrl,
-  p2pStatus,
   waSending,
   waSendStatus,
   onStepChange,
@@ -625,16 +622,8 @@ export function ToolRack({
             </div>
 
             {qrDataUrl && (
-              <div className="qr-card qr-card-compact">
-                <img src={qrDataUrl} alt="P2P QR Code" className="qr-image" />
-                <div className="qr-info">
-                  <div className="qr-title">
-                    <QrCode size={13} className="icon-crimson" />
-                    <span>{t.qrTitle}</span>
-                  </div>
-                  {p2pStatus && <div className="p2p-status-badge">{p2pStatus}</div>}
-                  <p className="qr-note">{t.qrLocalNote}</p>
-                </div>
+              <div className="qr-card qr-card-solo">
+                <img src={qrDataUrl} alt="P2P QR Code" className="qr-image-solo" />
               </div>
             )}
 

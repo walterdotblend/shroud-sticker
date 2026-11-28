@@ -142,6 +142,26 @@ export interface Translations {
   pcGuide1: string
   pcGuide2: string
   pcGuide3: string
+  tourBtn: string
+  tourTitle: string
+  tourNext: string
+  tourPrev: string
+  tourDone: string
+  tourStep1Title: string
+  tourStep1Body: string
+  tourStep2Title: string
+  tourStep2Body: string
+  tourStep3Title: string
+  tourStep3Body: string
+  tourStep4Title: string
+  tourStep4Body: string
+  tourStep5Title: string
+  tourStep5Prompt: string
+  tourAudioPcOnlyNote: string
+  tourPcTitle: string
+  tourPcBody: string
+  tourMobileTitle: string
+  tourMobileBody: string
 }
 
 const en: Translations = {
@@ -276,6 +296,26 @@ const en: Translations = {
   pcGuide1: '1. Download & unzip the SHROUD Extension (.zip) from below Sticker Pack.',
   pcGuide2: '2. Open chrome://extensions (or edge://extensions), enable Developer Mode → Load unpacked.',
   pcGuide3: '3. Select the unzipped folder, refresh SHROUD & keep web.whatsapp.com open.',
+  tourBtn: 'Guide',
+  tourTitle: 'SHROUD // GUIDED TOUR',
+  tourNext: 'Next →',
+  tourPrev: '← Back',
+  tourDone: 'Finish Tour',
+  tourStep1Title: '01 · Load Any Media (GIF, Video, WebP or URL)',
+  tourStep1Body: 'Drop a local GIF, MP4, WebM, MOV, or animated WebP, or paste a direct link (Giphy, Tenor, Imgur). For Klipy or gated sites, use the SHROUD Extension ("Use Current Tab URL").',
+  tourStep2Title: '02 · 512×512 Canvas, Shattered Mirror & Infinite Saws',
+  tourStep2Body: 'Drag, scale, and rotate directly on the canvas or type exact numbers. Use the Shattered Mirror button to flip horizontally, and drag/scroll the side sawblade wheels to pan X/Y without limits.',
+  tourStep3Title: '03 · 10s Timelines, Synced Audio & LOOP',
+  tourStep3Body: 'Trim up to 10s. Video audio loads automatically, or you can mute/upload custom audio with 0–200% volume. For clips under 10s, enable LOOP to extend up to 10s with magnetic snap markers; on longer clips, drag the selected bar.',
+  tourStep4Title: '04 · Forge, AI Background Removal & Auto-Compression',
+  tourStep4Body: 'Set FPS (lowering FPS automatically raises quality), enable 100% local AI Background Removal (RMBG-1.4 or MODNet), and click Forge. Auto-compression lowers quality first and FPS only as a last resort to stay ≤ 500 KB.',
+  tourStep5Title: '05 · Choose Where to Export: PC or Mobile',
+  tourStep5Prompt: 'Select your target platform to see how to send your sticker:',
+  tourAudioPcOnlyNote: 'Note: Stickers with Audio (OGG/Opus) can only be sent from PC via WhatsApp Web.',
+  tourPcTitle: 'PC · WhatsApp Web (Supports Audio)',
+  tourPcBody: '1) Download & install the SHROUD Extension (.zip below Sticker Pack) in Chrome/Edge. 2) Keep web.whatsapp.com open. 3) Choose Self-Chat (opens Forward) or Current Chat and click "Send to WhatsApp Web (with Sound)".',
+  tourMobileTitle: 'Mobile · Android / iOS (Silent Stickers)',
+  tourMobileBody: 'Download the .webp file, scan the P2P QR code directly with your phone camera, or add up to 30 stickers to your auto-saved Sticker Pack and export .wastickers to open in Sticker Maker.',
 }
 
 const es: Translations = {
@@ -410,6 +450,26 @@ const es: Translations = {
   pcGuide1: '1. Descarga y descomprime la Extensión SHROUD (.zip) debajo del Pack de Stickers.',
   pcGuide2: '2. Abre chrome://extensions (o edge://extensions), activa Modo Desarrollador → Cargar descomprimida.',
   pcGuide3: '3. Elige la carpeta, recarga SHROUD y mantén web.whatsapp.com abierto.',
+  tourBtn: 'Guía',
+  tourTitle: 'SHROUD // TOUR GUIADO',
+  tourNext: 'Siguiente →',
+  tourPrev: '← Atrás',
+  tourDone: 'Finalizar Tour',
+  tourStep1Title: '01 · Cargar Medio (GIF, Video, WebP o URL)',
+  tourStep1Body: 'Arrastra un GIF, MP4, WebM, MOV o WebP animado, o pega un enlace (Giphy, Tenor, Imgur). Para Klipy o webs protegidas, usa la Extensión SHROUD ("Use Current Tab URL").',
+  tourStep2Title: '02 · Canvas 512×512, Espejo Roto y Sierras Infinitas',
+  tourStep2Body: 'Mueve, escala y rota directo en el cuadro o escribe valores exactos. Usa el botón de Espejo Roto para voltear horizontalmente y las sierras laterales para mover en X/Y sin límite.',
+  tourStep3Title: '03 · Líneas de 10s, Audio Sincronizado y LOOP',
+  tourStep3Body: 'Recorta hasta 10s. El audio del video se carga por defecto o puedes subir uno propio (0–200% volumen). Si dura menos de 10s, activa LOOP para extenderlo con imán en cada repetición; si dura más, arrastra el segmento.',
+  tourStep4Title: '04 · Forjar, Quitar Fondo con IA y Compresión ≤ 500 KB',
+  tourStep4Body: 'Ajusta FPS (al bajarlos sube la calidad al máximo), activa Quitar Fondo con IA 100% local (RMBG-1.4 o MODNet) y pulsa Forjar. Primero baja calidad y solo como último recurso reduce FPS.',
+  tourStep5Title: '05 · Elige tu Destino: PC o Celular',
+  tourStep5Prompt: 'Después de forjar, elige dónde quieres enviar tu sticker:',
+  tourAudioPcOnlyNote: 'Aclaración: Los stickers con Audio (OGG/Opus) solo funcionan enviándolos desde PC vía WhatsApp Web.',
+  tourPcTitle: 'PC · WhatsApp Web (Con o sin Audio)',
+  tourPcBody: '1) Descarga e instala la Extensión SHROUD (.zip debajo de Sticker Pack) en Chrome/Edge. 2) Mantén web.whatsapp.com abierto. 3) Elige Chat Propio (abre Reenviar) o Chat Actual y pulsa "Enviar a WhatsApp Web".',
+  tourMobileTitle: 'Celular · Android / iOS (Solo sin Audio)',
+  tourMobileBody: 'Descarga el .webp, escanea el código QR directo con la cámara de tu celular, o guarda hasta 30 stickers en tu Sticker Pack (persistente en memoria) y exporta .wastickers para Sticker Maker.',
 }
 
 const pt: Translations = {
@@ -544,6 +604,26 @@ const pt: Translations = {
   pcGuide1: '1. Baixe e extraia a Extensão SHROUD (.zip) abaixo do Pacote de Figurinhas.',
   pcGuide2: '2. Abra chrome://extensions (ou edge://extensions), ative Modo Desenvolvedor → Carregar sem compactação.',
   pcGuide3: '3. Selecione a pasta extraída, atualize o SHROUD e deixe web.whatsapp.com aberto.',
+  tourBtn: 'Guia',
+  tourTitle: 'SHROUD // TOUR GUIADO',
+  tourNext: 'Próximo →',
+  tourPrev: '← Voltar',
+  tourDone: 'Concluir Tour',
+  tourStep1Title: '01 · Carregar Mídia (GIF, Vídeo, WebP ou URL)',
+  tourStep1Body: 'Solte um GIF, MP4, WebM, MOV ou WebP animado, ou cole um link (Giphy, Tenor, Imgur). Para Klipy, use a Extensão SHROUD ("Use Current Tab URL").',
+  tourStep2Title: '02 · Canvas 512×512, Espelho Quebrado e Serras Infinitas',
+  tourStep2Body: 'Mova, escale e gire no canvas ou digite valores exatos. Use o Espelho Quebrado para inverter e as serras laterais para mover X/Y sem limites.',
+  tourStep3Title: '03 · Linhas de 10s, Áudio Sincronizado e LOOP',
+  tourStep3Body: 'Corte até 10s. O áudio do vídeo carrega por padrão ou envie um próprio (0–200%). Em clipes <10s, ative LOOP com imã nas repetições; em maiores, arraste a seleção.',
+  tourStep4Title: '04 · Forjar, Remover Fundo com IA e Compressão ≤ 500 KB',
+  tourStep4Body: 'Ajuste FPS (reduzir aumenta a qualidade ao máximo), ative IA local para remover fundo e clique em Forjar.',
+  tourStep5Title: '05 · Escolha o Destino: PC ou Celular',
+  tourStep5Prompt: 'Após forjar, escolha para onde enviar:',
+  tourAudioPcOnlyNote: 'Aviso: Figurinhas com Áudio (OGG/Opus) funcionam apenas pelo PC via WhatsApp Web.',
+  tourPcTitle: 'PC · WhatsApp Web (Com ou sem Áudio)',
+  tourPcBody: 'Instale a Extensão SHROUD (.zip abaixo do Pacote) no Chrome/Edge, mantenha web.whatsapp.com aberto, escolha Meu Chat ou Chat Atual e clique em "Enviar para WhatsApp Web".',
+  tourMobileTitle: 'Celular · Android / iOS (Sem Áudio)',
+  tourMobileBody: 'Baixe o .webp, escaneie o QR Code com o celular ou monte um Pacote (.wastickers) com até 30 figurinhas para abrir no Sticker Maker.',
 }
 
 const fr: Translations = {
@@ -678,6 +758,26 @@ const fr: Translations = {
   pcGuide1: '1. Téléchargez et décompressez l’extension SHROUD (.zip) sous le Pack de Stickers.',
   pcGuide2: '2. Ouvrez chrome://extensions (ou edge://extensions), activez Mode développeur → Charger non empaquetée.',
   pcGuide3: '3. Sélectionnez le dossier, actualisez SHROUD et gardez web.whatsapp.com ouvert.',
+  tourBtn: 'Guide',
+  tourTitle: 'SHROUD // VISITE GUIDÉE',
+  tourNext: 'Suivant →',
+  tourPrev: '← Retour',
+  tourDone: 'Terminer',
+  tourStep1Title: '01 · Importer un média (GIF, Vidéo, WebP ou URL)',
+  tourStep1Body: 'Déposez un GIF, MP4, WebM, MOV ou WebP animé, ou collez un lien. Pour Klipy, utilisez l’extension SHROUD ("Use Current Tab URL").',
+  tourStep2Title: '02 · Canevas 512×512, Miroir Brisé & Scies Infinies',
+  tourStep2Body: 'Déplacez, zoomez et pivotez sur le canevas. Utilisez le Miroir Brisé pour retourner horizontalement et les scies latérales pour un déplacement X/Y illimité.',
+  tourStep3Title: '03 · Lignes de 10s, Audio Synchronisé & LOOP',
+  tourStep3Body: 'Coupez jusqu’à 10s. L’audio vidéo est chargé par défaut ou importez le vôtre (0–200%). Activez LOOP pour boucler jusqu’à 10s avec aimant.',
+  tourStep4Title: '04 · Forger, IA Arrière-plan & Compression ≤ 500 Ko',
+  tourStep4Body: 'Réglez les FPS, activez la suppression d’arrière-plan par IA locale et cliquez sur Forger.',
+  tourStep5Title: '05 · Choisissez votre destination : PC ou Mobile',
+  tourStep5Prompt: 'Après la forge, choisissez où exporter :',
+  tourAudioPcOnlyNote: 'Note : Les stickers avec Audio (OGG/Opus) ne peuvent être envoyés que depuis un PC via WhatsApp Web.',
+  tourPcTitle: 'PC · WhatsApp Web (Avec ou sans Audio)',
+  tourPcBody: 'Installez l’extension SHROUD (.zip sous le Pack) dans Chrome/Edge, gardez web.whatsapp.com ouvert, choisissez Mon Chat ou Chat Actuel et envoyez.',
+  tourMobileTitle: 'Mobile · Android / iOS (Sans Audio)',
+  tourMobileBody: 'Téléchargez le .webp, scannez le QR code avec votre téléphone ou créez un pack .wastickers pour Sticker Maker.',
 }
 
 const de: Translations = {
@@ -812,6 +912,26 @@ const de: Translations = {
   pcGuide1: '1. SHROUD-Erweiterung (.zip) unter dem Sticker-Paket herunterladen & entpacken.',
   pcGuide2: '2. chrome://extensions (oder edge://extensions) öffnen, Entwicklermodus aktivieren → Entpackte laden.',
   pcGuide3: '3. Ordner wählen, SHROUD neu laden und web.whatsapp.com geöffnet halten.',
+  tourBtn: 'Guide',
+  tourTitle: 'SHROUD // GEFÜHRTE TOUR',
+  tourNext: 'Weiter →',
+  tourPrev: '← Zurück',
+  tourDone: 'Fertig',
+  tourStep1Title: '01 · Medien laden (GIF, Video, WebP oder URL)',
+  tourStep1Body: 'Lege GIF, MP4, WebM, MOV oder animierte WebP ab oder füge einen Link ein. Für Klipy nutze die SHROUD-Erweiterung.',
+  tourStep2Title: '02 · 512×512 Leinwand, Zerbrochener Spiegel & Sägen',
+  tourStep2Body: 'Ziehe, skaliere und drehe direkt auf der Leinwand. Nutze den Spiegel zum Umdrehen und die seitlichen Säge-Räder für unbegrenztes X/Y-Verschieben.',
+  tourStep3Title: '03 · 10s-Zeitleisten, Synchrones Audio & LOOP',
+  tourStep3Body: 'Schneide bis 10s. Video-Audio wird automatisch geladen oder eigenes Audio (0–200%). Aktiviere LOOP für nahtlose Wiederholungen bis 10s.',
+  tourStep4Title: '04 · Schmieden, lokale KI & Kompression ≤ 500 KB',
+  tourStep4Body: 'Stelle FPS ein, aktiviere lokale KI-Hintergrundentfernung und klicke auf Schmieden.',
+  tourStep5Title: '05 · Ziel wählen: PC oder Mobil',
+  tourStep5Prompt: 'Wähle nach dem Schmieden dein Ziel:',
+  tourAudioPcOnlyNote: 'Hinweis: Sticker mit Ton (OGG/Opus) funktionieren nur am PC über WhatsApp Web.',
+  tourPcTitle: 'PC · WhatsApp Web (Mit oder ohne Ton)',
+  tourPcBody: 'SHROUD-Erweiterung (.zip unter dem Paket) in Chrome/Edge laden, web.whatsapp.com öffnen, Chat wählen und direkt senden.',
+  tourMobileTitle: 'Mobil · Android / iOS (Ohne Ton)',
+  tourMobileBody: '.webp herunterladen, QR-Code mit dem Handy scannen oder .wastickers-Paket für Sticker Maker exportieren.',
 }
 
 const ja: Translations = {
@@ -946,6 +1066,26 @@ const ja: Translations = {
   pcGuide1: '1. スタンプパックの下から SHROUD拡張機能 (.zip) を保存して解凍します。',
   pcGuide2: '2. chrome://extensions（または edge://extensions）を開き、デベロッパーモード → パッケージ化されていない拡張機能を読み込む。',
   pcGuide3: '3. フォルダを選択し、SHROUDを更新して web.whatsapp.com を開いたままにします。',
+  tourBtn: 'ガイド',
+  tourTitle: 'SHROUD // ガイドツアー',
+  tourNext: '次へ →',
+  tourPrev: '← 戻る',
+  tourDone: '完了',
+  tourStep1Title: '01 · 素材を読み込む (GIF / 動画 / WebP / URL)',
+  tourStep1Body: 'GIF、MP4、WebM、MOV、アニメーションWebPをドロップするかURLを貼り付けます。Klipy等はSHROUD拡張機能から取り込めます。',
+  tourStep2Title: '02 · 512×512 配置・割れた鏡・無限ノコギリ',
+  tourStep2Body: 'キャンバス上で移動・拡大・回転し、割れた鏡で左右反転、側面のノコギリホイールでX/Yを無制限に調整できます。',
+  tourStep3Title: '03 · 10秒タイムライン・同期音声・LOOP',
+  tourStep3Body: '最大10秒にトリミング。動画の音声を自動読込、または独自音声(0–200%)を追加できます。10秒未満はLOOPで繰り返し延長可能。',
+  tourStep4Title: '04 · 生成・ローカルAI背景透過・500KB自動圧縮',
+  tourStep4Body: 'FPSやAI背景透過(RMBG-1.4/MODNet)を設定し生成を押します。画質を優先し最後にFPSを調整します。',
+  tourStep5Title: '05 · 送信先を選択：PC または スマホ',
+  tourStep5Prompt: '生成後のエクスポート先を選択してください：',
+  tourAudioPcOnlyNote: '注記：音声付きスタンプ（OGG/Opus）はPCのWhatsApp Webからのみ送信可能です。',
+  tourPcTitle: 'PC · WhatsApp Web（音声付き対応）',
+  tourPcBody: '拡張機能(.zip)をChrome/Edgeに読み込み、web.whatsapp.comを開いた状態で送信ボタンを押すだけで音声付きで直接送信できます。',
+  tourMobileTitle: 'スマホ · Android / iOS（音声なし）',
+  tourMobileBody: '.webpを保存、P2P QRコードをスマホでスキャン、またはパック(.wastickers)を作成してSticker Makerで開きます。',
 }
 
 const ru: Translations = {
@@ -1080,6 +1220,26 @@ const ru: Translations = {
   pcGuide1: '1. Скачайте и распакуйте расширение SHROUD (.zip) под блоком набора стикеров.',
   pcGuide2: '2. Откройте chrome://extensions (или edge://extensions), включите Режим разработчика → Загрузить распакованное.',
   pcGuide3: '3. Выберите папку, обновите SHROUD и держите вкладку web.whatsapp.com открытой.',
+  tourBtn: 'Гид',
+  tourTitle: 'SHROUD // ОБУЧЕНИЕ',
+  tourNext: 'Далее →',
+  tourPrev: '← Назад',
+  tourDone: 'Готово',
+  tourStep1Title: '01 · Загрузка медиа (GIF, Видео, WebP или URL)',
+  tourStep1Body: 'Перетащите GIF, MP4, WebM, MOV или анимированный WebP, либо вставьте ссылку. Для Klipy используйте расширение SHROUD.',
+  tourStep2Title: '02 · Холст 512×512, Разбитое зеркало и Пилы',
+  tourStep2Body: 'Двигайте, масштабируйте и вращайте объект. Разбитое зеркало отражает по горизонтали, а боковые пилы сдвигают X/Y без ограничений.',
+  tourStep3Title: '03 · Дорожки 10с, Синхронное аудио и LOOP',
+  tourStep3Body: 'Обрезка до 10с. Звук видео берётся по умолчанию или загрузите своё аудио (0–200%). Кнопка LOOP зацикливает до 10с с магнитом на повторах.',
+  tourStep4Title: '04 · Создание, Локальный ИИ и Сжатие ≤ 500 КБ',
+  tourStep4Body: 'Настройте FPS, удаление фона ИИ (RMBG-1.4 / MODNet) и нажмите Создать. Сначала снижается качество, и только потом FPS.',
+  tourStep5Title: '05 · Выбор экспорта: ПК или Телефон',
+  tourStep5Prompt: 'После создания выберите способ отправки:',
+  tourAudioPcOnlyNote: 'Важно: Стикеры со звуком (OGG/Opus) отправляются только с ПК через WhatsApp Web.',
+  tourPcTitle: 'ПК · WhatsApp Web (Со звуком и без)',
+  tourPcBody: 'Установите расширение SHROUD (.zip под набором) в Chrome/Edge, откройте web.whatsapp.com, выберите чат и отправьте напрямую.',
+  tourMobileTitle: 'Телефон · Android / iOS (Без звука)',
+  tourMobileBody: 'Скачайте .webp, отсканируйте QR-код камерой телефона или соберите .wastickers для Sticker Maker.',
 }
 
 const DICTIONARIES: Record<LangCode, Translations> = { en, es, pt, fr, de, ja, ru }

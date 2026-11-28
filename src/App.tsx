@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Download, Globe, Share2, ShieldCheck, Smartphone, Terminal } from 'lucide-react'
+import { Compass, Download, Globe, Share2, ShieldCheck, Smartphone, Terminal } from 'lucide-react'
 import { AdBannerRail } from './components/AdBannerRail'
 import { BloodBackdrop } from './components/backdrop/BloodBackdrop'
 import { CropStage } from './components/CropStage'
+import { GuidedTourModal } from './components/GuidedTourModal'
 import { PackSidebar } from './components/PackSidebar'
 import { ToolRack, type WizardStep } from './components/ToolRack'
 import { stickerEngine } from './engine/ffmpegClient'
@@ -95,7 +96,6 @@ export function App() {
   const [packLoaded, setPackLoaded] = useState<boolean>(false)
   const [packError, setPackError] = useState<string | null>(null)
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
-  const [p2pStatus, setP2pStatus] = useState<string | null>(null)
   const p2pHostRef = useRef<P2pHostSession | null>(null)
 
   const [audioTrack, setAudioTrack] = useState<AudioTrackInfo | null>(null)
@@ -103,6 +103,22 @@ export function App() {
   const [waExtAvailable, setWaExtAvailable] = useState(false)
   const [waSending, setWaSending] = useState(false)
   const [waSendStatus, setWaSendStatus] = useState<string | null>(null)
+  const [tourOpen, setTourOpen] = useState(() => {
+    try {
+      return !localStorage.getItem('shroud_tour_seen')
+    } catch {
+      return false
+    }
+  })
+
+  const closeTour = () => {
+    setTourOpen(false)
+    try {
+      localStorage.setItem('shroud_tour_seen', '1')
+    } catch {
+      // ignore
+    }
+  }
 
   // Mobile P2P receiver mode (?p2p=<peerId>)
   const [incomingPeerId] = useState<string | null>(() => {
@@ -437,7 +453,6 @@ export function App() {
       ))
 
     p2pHostRef.current?.destroy()
-    setP2pStatus('Initializing WebRTC P2P channel...')
 
     const wastickersBytes = await finalPack.arrayBuffer()
     const webpBytes = result ? await result.blob.arrayBuffer() : new ArrayBuffer(0)
@@ -446,7 +461,6 @@ export function App() {
       const session = await startP2pStickerHost(
         { filename, wastickersBytes, webpBytes },
         (st) => {
-          setP2pStatus(st)
           appendLog(`> [P2P] ${st}`)
         }
       )
@@ -455,7 +469,6 @@ export function App() {
     } catch {
       const fallbackQr = await generateAppQrDataUrl(window.location.href)
       setQrDataUrl(fallbackQr)
-      setP2pStatus('WebRTC signaling unavailable; transfer the file to your mobile.')
     }
   }
 
@@ -648,6 +661,15 @@ export function App() {
 
         <div className="topbar-right">
           <span className="spec-pill">{t.specBadge}</span>
+          <button
+            type="button"
+            className="lang-pill tour-open-btn"
+            onClick={() => setTourOpen(true)}
+            title={t.tourTitle}
+          >
+            <Compass size={13} className="icon-crimson" />
+            <span>{t.tourBtn}</span>
+          </button>
           <label className="lang-pill" title={t.langLabel}>
             <Globe size={13} className="icon-crimson" />
             <span className="lang-prefix">{t.langLabel}</span>
@@ -792,7 +814,6 @@ export function App() {
             encoding={encoding}
             result={result}
             qrDataUrl={qrDataUrl}
-            p2pStatus={p2pStatus}
             waSending={waSending}
             waSendStatus={waSendStatus}
             onStepChange={setStep}
@@ -861,6 +882,7 @@ export function App() {
           </div>
         </div>
       </footer>
+      <GuidedTourModal t={t} open={tourOpen} onClose={closeTour} />
     </div>
   )
 }
